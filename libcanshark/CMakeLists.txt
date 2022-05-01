@@ -15,7 +15,7 @@ find_package(Qt5 COMPONENTS
         REQUIRED)
 
 set(SRCS
-        libcanshark.cpp
+        LibCanShark.cpp
 )
 
 add_library(libcanshark STATIC ${SRCS})

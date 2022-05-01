@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(xdfcreator)
+project(canshark)
 
 set(CMAKE_PREFIX_PATH "C:/Qt5.13/5.15.2/msvc2019")
 

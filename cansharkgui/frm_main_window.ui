@@ -39,16 +39,6 @@
     <string>Disconnect</string>
    </property>
   </widget>
-  <widget class="QPlainTextEdit" name="outputText">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
-     <y>20</y>
-     <width>251</width>
-     <height>181</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QPushButton" name="startButton">
    <property name="geometry">
     <rect>
@@ -73,6 +63,16 @@
    </property>
    <property name="text">
     <string>Stop</string>
+   </property>
+  </widget>
+  <widget class="QPlainTextEdit" name="outputText">
+   <property name="geometry">
+    <rect>
+     <x>20</x>
+     <y>20</y>
+     <width>261</width>
+     <height>251</height>
+    </rect>
    </property>
   </widget>
  </widget>

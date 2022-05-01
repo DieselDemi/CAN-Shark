@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
+#include "LibCanShark.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -18,15 +19,17 @@ namespace dd::forms {
         ~frm_main_window() override;
 
     private:
-        QSerialPort port;
-
+//        LibCanShark canshark_thread;
         Ui::frm_main_window *ui;
+        QSerialPort port;
 
     private slots:
         void connectClicked();
         void disconnectClicked();
         void startClicked();
         void stopClicked();
+
+        void readPort();
     };
 } // dd::forms
 

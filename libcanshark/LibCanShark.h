@@ -5,8 +5,9 @@
 #include <QMutex>
 
 class LibCanShark : public QThread {
+public:
     explicit LibCanShark(QObject *parent = nullptr);
-    ~LibCanShark();
+    ~LibCanShark() override;
 
     void connect(const QString &portName, int waitTimeout, const QString& response);
 
