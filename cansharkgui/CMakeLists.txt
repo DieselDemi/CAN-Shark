@@ -17,7 +17,7 @@ find_package(Qt5 COMPONENTS
 
 include_directories(../libcanshark)
 
-add_executable(CanShark main.cpp frm_main_window.cpp frm_main_window.h frm_main_window.ui)
+add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui)
 
 target_link_libraries(CanShark
         Qt5::Core

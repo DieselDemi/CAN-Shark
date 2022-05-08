@@ -1,12 +1,12 @@
 #include <QApplication>
 #include <QPushButton>
 
-#include "frm_main_window.h"
+#include "FormMainWindow.h"
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
-    dd::forms::frm_main_window window;
+    dd::forms::FormMainWindow window;
 //    xdfCreator.setStyleSheet(dd::forms::style::style);
     window.show();
 

@@ -7,20 +7,20 @@
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
-    namespace Ui { class frm_main_window; }
+    namespace Ui { class FormMainWindow; }
     QT_END_NAMESPACE
 
-    class frm_main_window : public QWidget {
+    class FormMainWindow : public QWidget {
     Q_OBJECT
 
     public:
-        explicit frm_main_window(QWidget *parent = nullptr);
+        explicit FormMainWindow(QWidget *parent = nullptr);
 
-        ~frm_main_window() override;
+        ~FormMainWindow() override;
 
     private:
 //        LibCanShark canshark_thread;
-        Ui::frm_main_window *ui;
+        Ui::FormMainWindow *ui;
         QSerialPort port;
 
     private slots:
@@ -28,6 +28,7 @@ namespace dd::forms {
         void disconnectClicked();
         void startClicked();
         void stopClicked();
+        void updateClicked();
 
         void readPort();
     };
