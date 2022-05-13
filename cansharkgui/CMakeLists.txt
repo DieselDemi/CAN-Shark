@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(CanShark)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -17,7 +17,7 @@ find_package(Qt5 COMPONENTS
 
 include_directories(../libcanshark)
 
-add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui)
+add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordDisplayItem.cpp RecordDisplayItem.h RecordDisplayItem.ui RecordItem.h)
 
 target_link_libraries(CanShark
         Qt5::Core

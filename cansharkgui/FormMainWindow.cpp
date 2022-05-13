@@ -5,10 +5,13 @@
 #include <sstream>
 #include <iostream>
 #include <QFileDialog>
+#include <QSerialPortInfo>
 
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include "RecordDisplayItem.h"
+#include "RecordItem.h"
 
 namespace dd::forms {
     FormMainWindow::FormMainWindow(QWidget *parent) :
@@ -19,8 +22,23 @@ namespace dd::forms {
         connect(ui->disconnectButton, &QPushButton::released, this, &FormMainWindow::disconnectClicked);
         connect(ui->startButton, &QPushButton::released, this, &FormMainWindow::startClicked);
         connect(ui->stopButton, &QPushButton::released, this, &FormMainWindow::stopClicked);
-        connect(ui->updateButton, &QPushButton::released, this, &FormMainWindow::updateClicked);
+        connect(ui->updateDeviceFirmwareButton, &QPushButton::released, this, &FormMainWindow::updateClicked);
         connect(&port, &QSerialPort::readyRead, this, &FormMainWindow::readPort);
+
+        for(const auto& serial_port : QSerialPortInfo::availablePorts()) {
+//            std::cout << serial_port.portName().toStdString() << " "
+//                      << serial_port.description().toStdString() << " "
+//                      << serial_port.manufacturer().toStdString() << " "
+//                      << serial_port.serialNumber().toStdString() << " "
+//            << std::endl;
+
+            if(serial_port.serialNumber() == "CANSHARKMINI") {
+                std::stringstream name_ss;
+                name_ss << "CAN Shark Mini on " << serial_port.portName().toStdString();
+
+                this->ui->deviceSelectionComboBox->addItem(QString::fromStdString(name_ss.str()), {serial_port.portName()});
+            }
+        }
     }
 
     FormMainWindow::~FormMainWindow() {
@@ -28,8 +46,9 @@ namespace dd::forms {
     }
 
     void FormMainWindow::connectClicked() {
-//        const SettingsDialog::Settings p = m_settings->settings();
-        port.setPortName("COM4");
+        QString port_name = this->ui->deviceSelectionComboBox->currentData().toString();
+
+        port.setPortName(port_name);
         port.setBaudRate(QSerialPort::Baud115200);
         port.setDataBits(QSerialPort::Data8);
         port.setParity(QSerialPort::NoParity);
@@ -38,14 +57,6 @@ namespace dd::forms {
 
         if (port.open(QIODevice::ReadWrite)) {
             this->ui->outputText->appendPlainText("Connected\n");
-//            ui->console.setEnabled(true);
-//            this->ui->console.setLocalEchoEnabled(true);
-//            m_ui->actionConnect->setEnabled(false);
-//            m_ui->actionDisconnect->setEnabled(true);
-//            m_ui->actionConfigure->setEnabled(false);
-//            showStatusMessage(tr("Connected to %1 : %2, %3, %4, %5, %6")
-//                                      .arg(p.name).arg(p.stringBaudRate).arg(p.stringDataBits)
-//                                      .arg(p.stringParity).arg(p.stringStopBits).arg(p.stringFlowControl));
         } else {
             this->ui->outputText->appendPlainText("Error Connecting\n");
 
@@ -73,8 +84,6 @@ namespace dd::forms {
         }
     }
 
-
-
     void FormMainWindow::readPort() {
         std::stringstream output;
 
@@ -82,6 +91,8 @@ namespace dd::forms {
         port.flush();
 
         for(int i = 0, j = 1; i < in_data.size(); i++, j++) {
+
+
 //            if(in_data.at(i) == 0x30 && in_data.at(j) == 0x31)
 //            {
 //                std::cout << "Start of packet" << std::endl;
@@ -99,6 +110,12 @@ namespace dd::forms {
         }
 
         output << std::endl;
+
+        data::RecordItem item {
+            .total_size = 16
+        };
+
+        this->ui->dataContainer->addWidget(new dd::forms::widgets::RecordDisplayItem(item, this));
 
         this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
         return;
