@@ -85,114 +85,46 @@ namespace dd::forms {
     }
 
     void FormMainWindow::readPort() {
-        std::stringstream output;
-
         const QByteArray in_data = port.readAll();
         port.flush();
 
+        std::vector<std::vector<uint8_t>> packets;
+        bool inPacket = false;
+        std::vector<uint8_t> tmp_data;
+
+        //This needs to be done better... 
         for(int i = 0, j = 1; i < in_data.size(); i++, j++) {
+            if(in_data.at(i) == 0x30 && in_data.at(j) == 0x31)
+            {
+                i = j + 1;
+                j++;
+                tmp_data.clear();
+                inPacket = true;
+                continue;
+            }
 
+            if(in_data.at(i) == 0x0d && in_data.at(j) == 0x0a)
+            {
+                i = 0;
+                j = 0;
+                inPacket = false;
+                packets.emplace_back(tmp_data);
+                continue;
+            }
 
-//            if(in_data.at(i) == 0x30 && in_data.at(j) == 0x31)
-//            {
-//                std::cout << "Start of packet" << std::endl;
-//                continue;
-//            }
-//
-//            if(in_data.at(i) == 0x0d && in_data.at(j) == 0x0a)
-//            {
-//                std::cout << std::endl << "End of packet" << std::endl;
-//                continue;
-//            }
+            if(inPacket)
+                tmp_data.emplace_back(in_data.at(i));
 
-//            std::cout << (uint8_t)(int)in_data.at(i) << " ";
-            output << (uint8_t)(int)in_data.at(i);
         }
 
-        output << std::endl;
+        for(const auto& packetData : packets) {
+            data::RecordItem packetItem;
 
-        data::RecordItem item {
-            .total_size = 16
-        };
+            //TODO(Demi): Deserialize all the data
+            memcpy(&packetItem.total_size, packetData.data() + 0, sizeof(uint32_t));
 
-        this->ui->dataContainer->addWidget(new dd::forms::widgets::RecordDisplayItem(item, this));
-
-        this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-        return;
-//
-
-
-//        for(char c : in_data) {
-//            if(c == 0x0d || c == 0x0a)
-//                std::cout << std::endl;
-//
-//            std::cout << std::hex << (int)c << " ";
-//        }
-//        std::cout << std::endl;
-//        return;
-
-        auto* data = (uint8_t*)malloc(sizeof(uint8_t) * in_data.size());
-
-        for(int i = 0; i < in_data.size(); i++)
-            data[i] = (uint8_t)in_data.at(i);
-
-        uint32_t len =
-                ((uint32_t)data[0] << 24) +
-                ((uint32_t)data[1] << 16) +
-                ((uint32_t)data[2] << 8) +
-                ((uint32_t)data[3]);
-
-        if (len == 0 || len > 128) {
-            port.flush();
-//            output.clear();
-//            output << "Invalid Length: " << len << " Dumping RAW: ";
-//
-//            for(size_t i = 0; i < in_data.size(); i++) {
-//                output << std::hex << data[i] << " ";
-//            }
-//            output << std::endl;
-//
-//            this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-            return;
+            this->ui->dataContainer->addWidget(new dd::forms::widgets::RecordDisplayItem(packetItem, this));
         }
-
-        output << "Size: " << len << " ";
-
-        uint16_t type = data[5] + (data[4] << 8);
-        switch (type) {
-            case 0:
-                output << "SF ";
-                break;
-            case 1:
-                output << "RF ";
-                break;
-            default:
-                break;
-        }
-
-        long long time = ((long long)data[13]) +
-                         ((long long)data[12] << 8) +
-                         ((long long)data[11] << 16) +
-                         ((long long)data[10] << 24) +
-                         ((long long)data[9] << 32) +
-                         ((long long)data[8] << 40) +
-                         ((long long)data[7] << 48) +
-                         ((long long)data[6] << 56);
-        output << time << "mcs ";
-
-        uint16_t id = data[15] + (data[14] << 8);
-        output << "ID: " << std::hex << id;
-
-//        for (size_t i = 16; i < len - 2; i++) {
-//            output << std::hex << data[i] << " ";
-//        }
-
-        uint16_t crc16 = data[len - 1] + (data[len] << 8);
-
-        output << " CRC16: " << crc16 << std::endl;
-
-        this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-        free(data);
     }
 
     void split(const QByteArray & a,

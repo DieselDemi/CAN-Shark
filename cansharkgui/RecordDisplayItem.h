@@ -5,9 +5,12 @@
 
 #include "RecordItem.h"
 
+#define DATA_SIZE_CONCAT_COUNT 3
+
 namespace dd::forms::widgets {
     QT_BEGIN_NAMESPACE
     namespace Ui { class RecordDisplayItem; }
+
     QT_END_NAMESPACE
 
     class RecordDisplayItem : public QWidget {

@@ -12,7 +12,7 @@ namespace dd::forms::widgets {
 
         connect(this->ui->inspectButton, &QPushButton::released, this, &RecordDisplayItem::inspectButtonClicked);
 
-        assert(recordData.total_size > 16);
+        assert(recordData.total_size >= 16);
         //The total_size - 16 is because there are 16 additional bytes sent in the message
         unsigned int dataByteCount = recordData.total_size - 16;
 
@@ -44,11 +44,11 @@ namespace dd::forms::widgets {
     QString RecordDisplayItem::ConvertDataFieldToQString(uint8_t *data, size_t size) {
         std::stringstream outStdStream;
 
-        for(size_t i = 0; i < size || i < 4; i++) {
+        for(size_t i = 0; i < size || i < DATA_SIZE_CONCAT_COUNT; i++) {
             outStdStream << "0x" << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << data[i] << " ";
         }
 
-        if(size >= 4)
+        if(size >= DATA_SIZE_CONCAT_COUNT)
             outStdStream << "...";
 
         return QString::fromStdString(outStdStream.str());
