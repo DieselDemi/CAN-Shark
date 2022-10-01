@@ -19,9 +19,12 @@ namespace dd::forms {
         ~FormMainWindow() override;
 
     private:
-//        LibCanShark canshark_thread;
+        LibCanShark canSharkThread;
         Ui::FormMainWindow *ui;
-        QSerialPort port;
+
+        QString packetHexString;
+        bool bAppendToPacket = false;
+        QList<QString> packetHexStrings;
 
     private slots:
         void connectClicked();
@@ -29,9 +32,13 @@ namespace dd::forms {
         void startClicked();
         void stopClicked();
         void updateClicked();
+        void saveRecordedDataClicked();
+        void clearLogOutput();
 
-        void readPort();
+        void serialMessage(const QString& s);
+        void serialError(const QString& s);
+        void serialResponse(const QString& s);
+        void serialWarn(const QString& s);
     };
 } // dd::forms
-
 #endif //CAN_SHARK_MINI_FRM_MAIN_WINDOW_H

@@ -6,9 +6,9 @@
 
 namespace dd::data {
 
-    typedef enum CanFrameType {
-        STANDARD,
-        RTR
+    typedef enum CanFrameType : uint16_t {
+        STANDARD = 0,
+        RTR = 1
     } CanFrameType;
 
     typedef struct RecordItem {

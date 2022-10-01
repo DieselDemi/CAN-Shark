@@ -18,21 +18,52 @@ namespace dd::forms {
             QWidget(parent), ui(new Ui::FormMainWindow) {
         ui->setupUi(this);
 
-        connect(ui->connectButton, &QPushButton::released, this, &FormMainWindow::connectClicked);
-        connect(ui->disconnectButton, &QPushButton::released, this, &FormMainWindow::disconnectClicked);
-        connect(ui->startButton, &QPushButton::released, this, &FormMainWindow::startClicked);
-        connect(ui->stopButton, &QPushButton::released, this, &FormMainWindow::stopClicked);
-        connect(ui->updateDeviceFirmwareButton, &QPushButton::released, this, &FormMainWindow::updateClicked);
-        connect(&port, &QSerialPort::readyRead, this, &FormMainWindow::readPort);
+        connect(ui->connectButton, &QPushButton::released,
+                this, &FormMainWindow::connectClicked);
+
+        connect(ui->disconnectButton, &QPushButton::released,
+                this, &FormMainWindow::disconnectClicked);
+
+        connect(ui->startButton, &QPushButton::released,
+                this, &FormMainWindow::startClicked);
+
+        connect(ui->stopButton, &QPushButton::released,
+                this, &FormMainWindow::stopClicked);
+
+        connect(ui->updateDeviceFirmwareButton, &QPushButton::released,
+                this, &FormMainWindow::updateClicked);
+
+        connect(ui->saveRecordedDataButton, &QPushButton::released,
+                this, &FormMainWindow::saveRecordedDataClicked);
+
+        connect(ui->clearOutputLogButton, &QPushButton::released,
+                this, &FormMainWindow::clearLogOutput);
+
+
+        connect(&canSharkThread, &LibCanShark::error,
+                this, &FormMainWindow::serialError);
+
+        connect(&canSharkThread, &LibCanShark::response,
+                this, &FormMainWindow::serialResponse);
+
+        connect(&canSharkThread, &LibCanShark::warn,
+                this, &FormMainWindow::serialWarn);
+
+        connect(&canSharkThread, &LibCanShark::message,
+                this, &FormMainWindow::serialMessage);
+
+        this->ui->disconnectButton->setEnabled(false);
+        this->ui->stopButton->setEnabled(false);
 
         for(const auto& serial_port : QSerialPortInfo::availablePorts()) {
-//            std::cout << serial_port.portName().toStdString() << " "
-//                      << serial_port.description().toStdString() << " "
-//                      << serial_port.manufacturer().toStdString() << " "
-//                      << serial_port.serialNumber().toStdString() << " "
-//            << std::endl;
+            std::cout << serial_port.portName().toStdString() << " "
+                      << serial_port.description().toStdString() << " "
+                      << serial_port.manufacturer().toStdString() << " "
+                      << serial_port.serialNumber().toStdString() << " "
+            << std::endl;
 
-            if(serial_port.serialNumber() == "CANSHARKMINI") {
+            //TODO: Find the name on linux distros, below is windows and mac
+            if(serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) {
                 std::stringstream name_ss;
                 name_ss << "CAN Shark Mini on " << serial_port.portName().toStdString();
 
@@ -46,153 +77,29 @@ namespace dd::forms {
     }
 
     void FormMainWindow::connectClicked() {
-        QString port_name = this->ui->deviceSelectionComboBox->currentData().toString();
-
-        port.setPortName(port_name);
-        port.setBaudRate(QSerialPort::Baud115200);
-        port.setDataBits(QSerialPort::Data8);
-        port.setParity(QSerialPort::NoParity);
-        port.setStopBits(QSerialPort::OneStop);
-        port.setFlowControl(QSerialPort::NoFlowControl);
-
-        if (port.open(QIODevice::ReadWrite)) {
-            this->ui->outputText->appendPlainText("Connected\n");
-        } else {
-            this->ui->outputText->appendPlainText("Error Connecting\n");
-
-        }
+        canSharkThread.connect(this->ui->deviceSelectionComboBox->currentData().toString(), 1000);
+        this->ui->disconnectButton->setEnabled(true);
+        this->ui->connectButton->setEnabled(false);
     }
 
     void FormMainWindow::disconnectClicked() {
-        if (port.isOpen()) {
-            port.close();
-
-            this->ui->outputText->appendPlainText("Disconnected\n");
-        }
-
+        canSharkThread.disconnect();
+        this->ui->disconnectButton->setEnabled(false);
+        this->ui->connectButton->setEnabled(true);
     }
 
     void FormMainWindow::startClicked() {
-        if (port.isOpen()) {
-            port.write(QByteArray::fromStdString("m"));
-        }
+        canSharkThread.startRecording();
+
+        this->ui->startButton->setEnabled(false);
+        this->ui->stopButton->setEnabled(true);
     }
 
     void FormMainWindow::stopClicked() {
-        if (port.isOpen()) {
-            port.write(QByteArray::fromStdString("n"));
-        }
-    }
+        canSharkThread.stopRecording();
 
-    void FormMainWindow::readPort() {
-        std::stringstream output;
-
-        const QByteArray in_data = port.readAll();
-        port.flush();
-
-        for(int i = 0, j = 1; i < in_data.size(); i++, j++) {
-
-
-//            if(in_data.at(i) == 0x30 && in_data.at(j) == 0x31)
-//            {
-//                std::cout << "Start of packet" << std::endl;
-//                continue;
-//            }
-//
-//            if(in_data.at(i) == 0x0d && in_data.at(j) == 0x0a)
-//            {
-//                std::cout << std::endl << "End of packet" << std::endl;
-//                continue;
-//            }
-
-//            std::cout << (uint8_t)(int)in_data.at(i) << " ";
-            output << (uint8_t)(int)in_data.at(i);
-        }
-
-        output << std::endl;
-
-        data::RecordItem item {
-            .total_size = 16
-        };
-
-        this->ui->dataContainer->addWidget(new dd::forms::widgets::RecordDisplayItem(item, this));
-
-        this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-        return;
-//
-
-
-//        for(char c : in_data) {
-//            if(c == 0x0d || c == 0x0a)
-//                std::cout << std::endl;
-//
-//            std::cout << std::hex << (int)c << " ";
-//        }
-//        std::cout << std::endl;
-//        return;
-
-        auto* data = (uint8_t*)malloc(sizeof(uint8_t) * in_data.size());
-
-        for(int i = 0; i < in_data.size(); i++)
-            data[i] = (uint8_t)in_data.at(i);
-
-        uint32_t len =
-                ((uint32_t)data[0] << 24) +
-                ((uint32_t)data[1] << 16) +
-                ((uint32_t)data[2] << 8) +
-                ((uint32_t)data[3]);
-
-        if (len == 0 || len > 128) {
-            port.flush();
-//            output.clear();
-//            output << "Invalid Length: " << len << " Dumping RAW: ";
-//
-//            for(size_t i = 0; i < in_data.size(); i++) {
-//                output << std::hex << data[i] << " ";
-//            }
-//            output << std::endl;
-//
-//            this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-            return;
-        }
-
-        output << "Size: " << len << " ";
-
-        uint16_t type = data[5] + (data[4] << 8);
-        switch (type) {
-            case 0:
-                output << "SF ";
-                break;
-            case 1:
-                output << "RF ";
-                break;
-            default:
-                break;
-        }
-
-        long long time = ((long long)data[13]) +
-                         ((long long)data[12] << 8) +
-                         ((long long)data[11] << 16) +
-                         ((long long)data[10] << 24) +
-                         ((long long)data[9] << 32) +
-                         ((long long)data[8] << 40) +
-                         ((long long)data[7] << 48) +
-                         ((long long)data[6] << 56);
-        output << time << "mcs ";
-
-        uint16_t id = data[15] + (data[14] << 8);
-        output << "ID: " << std::hex << id;
-
-//        for (size_t i = 16; i < len - 2; i++) {
-//            output << std::hex << data[i] << " ";
-//        }
-
-        uint16_t crc16 = data[len - 1] + (data[len] << 8);
-
-        output << " CRC16: " << crc16 << std::endl;
-
-        this->ui->outputText->appendPlainText(QString::fromStdString(output.str()));
-        free(data);
+        this->ui->startButton->setEnabled(true);
+        this->ui->stopButton->setEnabled(false);
     }
 
     void split(const QByteArray & a,
@@ -204,85 +111,189 @@ namespace dd::forms {
     }
 
     void FormMainWindow::updateClicked() {
-        if(port.isOpen()) {
-            auto file_name =
-                    QFileDialog::getOpenFileName(
-                            this,
-                            tr("Select Update"),
-                            "/home",
-                            tr("Update Files (*.csu)"));
-
-            QFile input(file_name);
-
-            if(!input.open(QFile::OpenModeFlag::ReadOnly))
-                return;
-
-            port.write(QByteArray::fromStdString("u")); //Put in update mode
-
-            qint64 update_size = input.size();
-
-            port.write(reinterpret_cast<const char *>(&update_size), sizeof(qint64));
-
-            port.flush();
-
-            //Wait for update mode to kick in
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            QByteArray file_data = input.readAll();
-            QList<QByteArray> lines;
-
-            split(file_data, lines, 512);
-
-            qint64 progress_count = 0;
-
-            for(const auto& line : lines) {
-                qint64 written_count = port.write(line);
-                port.flush();
-
-                progress_count += written_count;
-
-                std::cout << "Wrote: " << written_count << " bytes" << std::endl;
-                std::cout << progress_count << " of " << file_data.size() << std::endl;
-
-                port.waitForReadyRead(100);
-                auto data = port.readAll();
-
-                std::cout << "Read: " << data.size() << std::endl;
-            }
-
-//            while(!input.atEnd()) {
+        return;
 //
-//                QByteArray line = input.readLine();
+//        if(port.isOpen()) {
+//            auto file_name =
+//                    QFileDialog::getOpenFileName(
+//                            this,
+//                            tr("Select Update"),
+//                            "/home",
+//                            tr("Update Files (*.csu)"));
+//
+//            QFile input(file_name);
+//
+//            if(!input.open(QFile::OpenModeFlag::ReadOnly))
+//                return;
+//
+//            port.write(QByteArray::fromStdString("u")); //Put in update mode
+//
+//            qint64 update_size = input.size();
+//
+//            port.write(reinterpret_cast<const char *>(&update_size), sizeof(qint64));
+//
+//            port.flush();
+//
+//            //Wait for update mode to kick in
+//            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+//
+//            QByteArray file_data = input.readAll();
+//            QList<QByteArray> lines;
+//
+//            split(file_data, lines, 512);
+//
+//            qint64 progress_count = 0;
+//
+//            for(const auto& line : lines) {
 //                qint64 written_count = port.write(line);
-//
-//                std::cout << line.size() << " == " << written_count << std::endl;
-//                assert(line.size() == written_count);
-//
 //                port.flush();
 //
-//                while(port.bytesToWrite() != 0){
-//                    port.waitForBytesWritten(10);
-//                }
+//                progress_count += written_count;
 //
-////                if(!port.waitForBytesWritten(100)) {
-////                    std::cout << "Error writting bytes" << std::endl;
+//                std::cout << "Wrote: " << written_count << " bytes" << std::endl;
+//                std::cout << progress_count << " of " << file_data.size() << std::endl;
+//
+//                port.waitForReadyRead(100);
+//                auto data = port.readAll();
+//
+//                std::cout << "Read: " << data.size() << std::endl;
+//            }
+//
+////            while(!input.atEnd()) {
+////
+////                QByteArray line = input.readLine();
+////                qint64 written_count = port.write(line);
+////
+////                std::cout << line.size() << " == " << written_count << std::endl;
+////                assert(line.size() == written_count);
+////
+////                port.flush();
+////
+////                while(port.bytesToWrite() != 0){
+////                    port.waitForBytesWritten(10);
 ////                }
-//            }
-
-//            for(const auto& byte : file_data.toStdString()) {
-//                port.write(reinterpret_cast<const char *>(byte));
-//                port.
-//                auto read_data = port.readAll();
+////
+//////                if(!port.waitForBytesWritten(100)) {
+//////                    std::cout << "Error writting bytes" << std::endl;
+//////                }
+////            }
 //
-//                for(const auto& read_byte : read_data) {
-//                    std::cout << std::hex << read_byte << " ";
-//                }
-//                std::cout << std::endl;
-//            }
+////            for(const auto& byte : file_data.toStdString()) {
+////                port.write(reinterpret_cast<const char *>(byte));
+////                port.
+////                auto read_data = port.readAll();
+////
+////                for(const auto& read_byte : read_data) {
+////                    std::cout << std::hex << read_byte << " ";
+////                }
+////                std::cout << std::endl;
+////            }
+//
+//
+////            port.write(file_data);
+//
+//        }
+    }
 
+    void FormMainWindow::saveRecordedDataClicked() {
+        //TODO Implement this
+    }
 
-//            port.write(file_data);
+    void FormMainWindow::serialError(const QString &s) {
+        this->ui->outputText->appendPlainText("ERROR: ");
+        this->ui->outputText->appendPlainText(s);
+        this->ui->outputText->appendPlainText("\n");
+    }
 
+    void FormMainWindow::serialResponse(const QString &s) {
+        for(char c : s.toStdString()) {
+            if(c  == '<') {
+                bAppendToPacket = true;
+                continue;
+            } else if (c == '>') {
+                bAppendToPacket = false;
+                packetHexStrings.append(packetHexString);
+                packetHexString.clear();
+            }
+
+            if(bAppendToPacket) {
+                packetHexString.append(c);
+            }
         }
+
+        if(bAppendToPacket)
+            return;
+
+        for (const auto &packet: packetHexStrings) {
+            QList<QString> byteStrings;
+
+            assert(packet.size() % 2 == 0);
+
+            for(qsizetype i = 0; i < packet.size(); i += 2){
+                QString byteString = packet.mid(i, 2);
+                byteStrings.append(byteString);
+            }
+
+            if(byteStrings.empty())
+                continue;
+
+            QString lengthString;
+
+            lengthString = byteStrings[3] +
+                           byteStrings[2] +
+                           byteStrings[1] +
+                           byteStrings[0];
+
+            bool bConvertedOk = false;
+
+            size_t length = lengthString.toULong(&bConvertedOk, 16);
+            assert(bConvertedOk);
+
+            auto dataLen = (qsizetype)(length - sizeof(uint16_t));
+            uint8_t packetData[dataLen];
+
+            for(qsizetype i = 0; i < dataLen; i++) {
+                bConvertedOk = false;
+                packetData[dataLen - i] = (uint8_t)byteStrings[4 + i].toUShort(&bConvertedOk, 16);
+                assert(bConvertedOk);
+            }
+
+            QString crcString = byteStrings[4 + dataLen + 1] +
+                                byteStrings[4 + dataLen];
+
+            bConvertedOk = false;
+            uint16_t crc = crcString.toUShort(&bConvertedOk, 16);
+            assert(bConvertedOk);
+
+//            std::cout << "Size: " << length << " DataSize: " << dataLen << " CRC16: " << crc << std::endl;
+
+            //1. Convert hex string to a record item
+            data::RecordItem data = {
+                .total_size = (uint32_t)dataLen,
+                .crc16 = crc
+            };
+
+            //2. Add a record display item with the packetData from the record item
+            auto* recordDisplayItem = new dd::forms::widgets::RecordDisplayItem(data, this);
+            this->ui->dataContainer->addWidget(recordDisplayItem);
+
+            //3. Remove this hex string from the list
+            packetHexString.remove(packet);
+        }
+    }
+
+    void FormMainWindow::serialWarn(const QString &s) {
+        this->ui->outputText->appendPlainText("WARN: ");
+        this->ui->outputText->appendPlainText(s);
+        this->ui->outputText->appendPlainText("\n");
+    }
+
+    void FormMainWindow::clearLogOutput() {
+        this->ui->outputText->clear();
+    }
+
+    void FormMainWindow::serialMessage(const QString &s) {
+        this->ui->outputText->appendPlainText(s);
+        this->ui->outputText->appendPlainText("\n");
     }
 } // dd::forms

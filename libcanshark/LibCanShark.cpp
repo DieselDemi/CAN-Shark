@@ -2,10 +2,9 @@
 
 #include <QtSerialPort/QSerialPort>
 #include <QTime>
+#include <iostream>
 
-LibCanShark::LibCanShark(QObject *parent) : QThread(parent) {
-
-}
+LibCanShark::LibCanShark(QObject *parent) : QThread(parent) {}
 
 LibCanShark::~LibCanShark() {
     mutex.lock();
@@ -14,18 +13,24 @@ LibCanShark::~LibCanShark() {
     wait();
 }
 
-void LibCanShark::connect(const QString &portName, int waitTimeout, const QString &response) {
+void LibCanShark::connect(const QString &portName, int waitTimeout) {
     QMutexLocker locker(&mutex);
 
     this->portname = portName;
     this->waitTimeout = waitTimeout;
-    this->response = response;
 
     if(!isRunning())
+    {
         start();
+        emit message(tr("Connected"));
+    }
+    else
+        emit message(tr("Already connected"));
 }
 
 void LibCanShark::run() {
+    QSerialPort serial;
+
     bool currentPortNameChanged = false;
 
     mutex.lock();
@@ -36,41 +41,70 @@ void LibCanShark::run() {
     }
 
     int currentWaitTimeout = waitTimeout;
-    QString currentRespone = response;
     mutex.unlock();
-    QSerialPort serial;
+
+    emit message("Serial connection thread started");
 
     while (!quit) {
-        if (currentPortNameChanged) {
-            serial.close();
+        if (!connected) {
+//            serial.close();
             serial.setPortName(currentPortName);
+            serial.setBaudRate(115200, QSerialPort::AllDirections);
 
             if (!serial.open(QIODevice::ReadWrite)) {
                 emit error(tr("Can't open %1, error code %2")
                                    .arg(portname).arg(serial.error()));
+
+                connected = false;
                 return;
+            }
+
+            connected = true;
+        }
+
+        if(bStartRecording) {
+            serial.write("m");
+            if(serial.waitForBytesWritten(waitTimeout)) {
+                emit message(tr("Serial starting to record"));
+                bRecording = true;
+                bStartRecording = false;
+                bStopRecording = false;
+            } else {
+                emit error(tr("Could not start bRecording"));
+                bRecording = false;
+                bStopRecording = true;
+                bStartRecording = false;
+            }
+        } else if(bStopRecording) {
+            serial.write("n");
+            if(serial.waitForBytesWritten(waitTimeout)) {
+                emit message(tr("Stopped recording"));
+                bRecording = false;
+                bStartRecording = false;
+                bStopRecording = false;
+            } else {
+                emit error(tr("Could not stop recording"));
+                bRecording = false;
+                bStartRecording = false;
+                bStopRecording = false;
             }
         }
 
-        if (serial.waitForReadyRead(currentWaitTimeout)) {
-            // read request
-            QByteArray requestData = serial.readAll();
-            while (serial.waitForReadyRead(10))
-                requestData += serial.readAll();
-            // write response
-            QByteArray responseData = currentRespone.toLocal8Bit();
-            serial.write(responseData);
-            if (serial.waitForBytesWritten(waitTimeout)) {
-                QString request(requestData);
-                emit this->request(request);
-            } else {
-                emit timeout(tr("Wait write response timeout %1")
-                                     .arg(QTime::currentTime().toString()));
+        if(bRecording && connected) {
+            if(serial.waitForReadyRead(currentWaitTimeout)){
+                this->responseData = serial.readAll();
+                emit response(this->responseData);
             }
-        } else {
-            emit timeout(tr("Wait read request timeout %1")
-                                 .arg(QTime::currentTime().toString()));
+//            else {
+//                serial.write("m\0");
+//                if(serial.waitForBytesWritten(waitTimeout)) {
+//                    emit message(tr("Sent M to device"));
+//                } else {
+//                    emit error(tr("Could not resend M"));
+//                }
+//            }
         }
+
         mutex.lock();
         if (currentPortName != portname) {
             currentPortName = portname;
@@ -79,19 +113,35 @@ void LibCanShark::run() {
             currentPortNameChanged = false;
         }
         currentWaitTimeout = waitTimeout;
-        currentRespone = response;
         mutex.unlock();
     }
 }
 
-void LibCanShark::error(const QString &s) {
-
+void LibCanShark::disconnect() {
+    mutex.lock();
+    this->quit = true;
+    emit message(tr("Disconnected..."));
+    mutex.unlock();
 }
 
-void LibCanShark::request(const QString &s) {
+void LibCanShark::startRecording() {
+    if(!connected)
+        emit error(tr("Not currently connected"));
 
+    mutex.lock();
+    bStartRecording = true;
+    mutex.unlock();
 }
 
-void LibCanShark::timeout(const QString &s) {
+void LibCanShark::stopRecording() {
+    if(!connected)
+        emit error(tr("Not currently connected"));
 
+    mutex.lock();
+    bStopRecording = true;
+    mutex.unlock();
+}
+
+void LibCanShark::sendFirmwareUpdate(QByteArray& data) {
+    //TODO
 }

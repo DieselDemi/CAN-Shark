@@ -12,7 +12,10 @@ namespace dd::forms::widgets {
 
         connect(this->ui->inspectButton, &QPushButton::released, this, &RecordDisplayItem::inspectButtonClicked);
 
-        assert(recordData.total_size > 16);
+        if(recordData.total_size < 16)
+            return;
+
+//        assert(recordData.total_size > 16);
         //The total_size - 16 is because there are 16 additional bytes sent in the message
         unsigned int dataByteCount = recordData.total_size - 16;
 
