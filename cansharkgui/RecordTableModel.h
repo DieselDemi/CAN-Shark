@@ -2,7 +2,7 @@
 #define CANSHARK_RECORDTABLEMODEL_H
 
 #include <QAbstractTableModel>
-#include "RecordItem.h"
+#include <RecordItem.h>
 
 namespace dd::forms::models {
     class RecordTableModel : public QAbstractTableModel {
@@ -25,15 +25,15 @@ namespace dd::forms::models {
 
         [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-        void addRow(data::RecordItem& item);
+        void addRow(libcanshark::data::RecordItem& item);
 
-        [[nodiscard]] data::RecordItem& getRecord(int row) const;
+        [[nodiscard]] libcanshark::data::RecordItem& getRecord(int row) const;
 
     private slots:
         void inspectButtonClicked(int row);
 
     private:
-        QList<data::RecordItem> rowsList;
+        QList<libcanshark::data::RecordItem> rowsList;
 
     };
 } // models

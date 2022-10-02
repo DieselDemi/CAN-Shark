@@ -16,8 +16,10 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 set(SRCS
-        LibCanShark.cpp
-)
+        SerialThread.cpp
+        DataParserThread.cpp
+        DataParserThread.h
+        )
 
 add_library(libcanshark STATIC ${SRCS})
 

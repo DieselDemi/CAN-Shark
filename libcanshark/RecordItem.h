@@ -4,7 +4,7 @@
 
 #include <cstdint>
 
-namespace dd::data {
+namespace dd::libcanshark::data {
 
     typedef enum CanFrameType : uint16_t {
         STANDARD = 0,

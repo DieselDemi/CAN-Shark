@@ -18,7 +18,7 @@ find_package(Qt6 COMPONENTS
 
 include_directories(../libcanshark)
 
-add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordItem.h RecordTableModel.cpp RecordTableModel.h)
+add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui ../libcanshark/RecordItem.h RecordTableModel.cpp RecordTableModel.h)
 
 target_link_libraries(CanShark
         Qt6::Core

@@ -3,8 +3,9 @@
 
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
-#include "LibCanShark.h"
+#include "SerialThread.h"
 #include "RecordTableModel.h"
+#include "DataParserThread.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -20,7 +21,8 @@ namespace dd::forms {
         ~FormMainWindow() override;
 
     private:
-        LibCanShark canSharkThread;
+        dd::libcanshark::threads::SerialThread canSharkThread;
+        dd::libcanshark::threads::DataParserThread dataThread;
         Ui::FormMainWindow *ui;
 
         QString packetHexString;
@@ -40,9 +42,9 @@ namespace dd::forms {
 
         void serialMessage(const QString& s);
         void serialError(const QString& s);
-        void serialResponse(const QString& s);
         void serialWarn(const QString& s);
 
+        void parsedDataReady(QList<dd::libcanshark::data::RecordItem>& data);
     };
 } // dd::forms
 #endif //CAN_SHARK_MINI_FRM_MAIN_WINDOW_H

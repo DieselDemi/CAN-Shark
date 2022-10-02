@@ -32,9 +32,9 @@ namespace dd::forms::models {
                     //Frame Type
                 case 2: {
                     switch (rowsList.at(index.row()).type) {
-                        case data::STANDARD:
+                        case libcanshark::data::STANDARD:
                             return QString("STANDARD");
-                        case data::RTR:
+                        case libcanshark::data::RTR:
                             return QString("REMOTE");
                         default:
                             return QString("Unknown");
@@ -48,7 +48,7 @@ namespace dd::forms::models {
                     return QString::number(rowsList.at(index.row()).id);
                     //Data
                 case 5: {
-                    data::RecordItem item = rowsList.at(index.row());
+                    libcanshark::data::RecordItem item = rowsList.at(index.row());
                     std::stringstream output;
 
 //                    for (size_t i = 0; i < item.total_size; i++) {
@@ -75,7 +75,7 @@ namespace dd::forms::models {
         return {};
     }
 
-    void RecordTableModel::addRow(data::RecordItem &item) {
+    void RecordTableModel::addRow(libcanshark::data::RecordItem &item) {
         beginInsertRows(QModelIndex(), static_cast<int>(rowsList.count() + 1), static_cast<int>(rowsList.count() + 1));
         rowsList.append(item);
         endInsertRows();
@@ -129,8 +129,8 @@ namespace dd::forms::models {
         return true;
     }
 
-    data::RecordItem &RecordTableModel::getRecord(int row) const {
-        return const_cast<data::RecordItem &>(rowsList.at(row));
+    libcanshark::data::RecordItem &RecordTableModel::getRecord(int row) const {
+        return const_cast<libcanshark::data::RecordItem &>(rowsList.at(row));
     }
 
     void RecordTableModel::inspectButtonClicked(int row) {
