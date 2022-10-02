@@ -51,9 +51,9 @@ namespace dd::forms::models {
                     data::RecordItem item = rowsList.at(index.row());
                     std::stringstream output;
 
-                    for (size_t i = 0; i < item.total_size; i++) {
-                        output << std::hex << item.data[i] << " ";
-                    }
+//                    for (size_t i = 0; i < item.total_size; i++) {
+//                        output << std::hex << item.data[i] << " ";
+//                    }
 
                     return QString::fromStdString(output.str());
                 }

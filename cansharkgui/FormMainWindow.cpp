@@ -200,20 +200,6 @@ namespace dd::forms {
 
     void FormMainWindow::saveRecordedDataClicked() {
         //TODO Implement this
-        for(int m = 0; m < 1000; m++) {
-
-            data::RecordItem item = {
-                    .total_size = 0,
-                    .type = data::CanFrameType::STANDARD,
-                    .time = 10000,
-                    .id = 100,
-                    .data = NULL,
-                    .crc16 = 54353
-            };
-
-            recordTableModelPtr->addRow(item);
-
-        }
     }
 
     void FormMainWindow::serialError(const QString &s) {
@@ -223,9 +209,6 @@ namespace dd::forms {
     }
 
     void FormMainWindow::serialResponse(const QString &s) {
-
-        return;
-
         for(char c : s.toStdString()) {
             if(c  == '<') {
                 bAppendToPacket = true;
@@ -307,8 +290,7 @@ namespace dd::forms {
             };
 
             //2. Add a record display item with the packetData from the record item
-//            auto* recordDisplayItem = new dd::forms::widgets::RecordDisplayItem(data, this);
-//            this->ui->dataContainer->addWidget(recordDisplayItem);
+            recordTableModelPtr->addRow(data);
 
             //3. Remove this hex string from the list
             packetHexString.remove(packet);

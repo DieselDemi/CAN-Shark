@@ -7,7 +7,7 @@
 namespace dd::forms::models {
     class RecordTableModel : public QAbstractTableModel {
     public:
-        explicit RecordTableModel(QObject* parent = nullptr);
+        explicit RecordTableModel(QObject* parent);
 
         [[nodiscard]] int rowCount(const QModelIndex &parent) const override;
 
