@@ -16,7 +16,7 @@ namespace dd::data {
         CanFrameType type;
         uint64_t time;
         uint32_t id;
-        uint8_t data[8];
+        uint8_t* data;
         uint16_t crc16;
     } RecordItem;
 }

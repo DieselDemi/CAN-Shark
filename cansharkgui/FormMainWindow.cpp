@@ -7,11 +7,11 @@
 #include <QFileDialog>
 #include <QSerialPortInfo>
 
-#include <iostream>
 #include <chrono>
 #include <thread>
-#include "RecordDisplayItem.h"
+#include <QSignalMapper>
 #include "RecordItem.h"
+#include "RecordTableModel.h"
 
 namespace dd::forms {
     FormMainWindow::FormMainWindow(QWidget *parent) :
@@ -54,6 +54,9 @@ namespace dd::forms {
 
         this->ui->disconnectButton->setEnabled(false);
         this->ui->stopButton->setEnabled(false);
+
+        recordTableModelPtr = std::make_unique<models::RecordTableModel>(ui->recordTable);
+        this->ui->recordTable->setModel(recordTableModelPtr.get());
 
         for(const auto& serial_port : QSerialPortInfo::availablePorts()) {
             std::cout << serial_port.portName().toStdString() << " "
@@ -197,6 +200,20 @@ namespace dd::forms {
 
     void FormMainWindow::saveRecordedDataClicked() {
         //TODO Implement this
+        for(int m = 0; m < 1000; m++) {
+
+            data::RecordItem item = {
+                    .total_size = 0,
+                    .type = data::CanFrameType::STANDARD,
+                    .time = 10000,
+                    .id = 100,
+                    .data = NULL,
+                    .crc16 = 54353
+            };
+
+            recordTableModelPtr->addRow(item);
+
+        }
     }
 
     void FormMainWindow::serialError(const QString &s) {
@@ -206,6 +223,9 @@ namespace dd::forms {
     }
 
     void FormMainWindow::serialResponse(const QString &s) {
+
+        return;
+
         for(char c : s.toStdString()) {
             if(c  == '<') {
                 bAppendToPacket = true;
@@ -265,17 +285,30 @@ namespace dd::forms {
             uint16_t crc = crcString.toUShort(&bConvertedOk, 16);
             assert(bConvertedOk);
 
-//            std::cout << "Size: " << length << " DataSize: " << dataLen << " CRC16: " << crc << std::endl;
+            uint64_t time = 0;
+            uint16_t type = 0;
+            uint32_t id = 0;
+            size_t canDataLen = dataLen - 8 + 2 + 4;
+            auto* canData = (uint8_t*)malloc(sizeof(uint8_t) * canDataLen);
+
+            memcpy(&time, packetData, 8);
+            memcpy(&type, packetData + 9, 2);
+            memcpy(&id, packetData + 11, 4);
+            memcpy(&canData, packetData + 15, dataLen);
 
             //1. Convert hex string to a record item
             data::RecordItem data = {
                 .total_size = (uint32_t)dataLen,
+                .type = static_cast<data::CanFrameType>(type),
+                .time = time,
+                .id = id,
+                .data = canData,
                 .crc16 = crc
             };
 
             //2. Add a record display item with the packetData from the record item
-            auto* recordDisplayItem = new dd::forms::widgets::RecordDisplayItem(data, this);
-            this->ui->dataContainer->addWidget(recordDisplayItem);
+//            auto* recordDisplayItem = new dd::forms::widgets::RecordDisplayItem(data, this);
+//            this->ui->dataContainer->addWidget(recordDisplayItem);
 
             //3. Remove this hex string from the list
             packetHexString.remove(packet);
@@ -296,4 +329,5 @@ namespace dd::forms {
         this->ui->outputText->appendPlainText(s);
         this->ui->outputText->appendPlainText("\n");
     }
+
 } // dd::forms

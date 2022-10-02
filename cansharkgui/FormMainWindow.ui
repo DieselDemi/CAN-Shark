@@ -44,7 +44,7 @@
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <item>
-            <layout class="QVBoxLayout" name="dataContainer"/>
+            <widget class="QTableView" name="recordTable"/>
            </item>
           </layout>
          </widget>

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
 #include "LibCanShark.h"
+#include "RecordTableModel.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -26,6 +27,8 @@ namespace dd::forms {
         bool bAppendToPacket = false;
         QList<QString> packetHexStrings;
 
+        std::unique_ptr<models::RecordTableModel> recordTableModelPtr;
+
     private slots:
         void connectClicked();
         void disconnectClicked();
@@ -39,6 +42,7 @@ namespace dd::forms {
         void serialError(const QString& s);
         void serialResponse(const QString& s);
         void serialWarn(const QString& s);
+
     };
 } // dd::forms
 #endif //CAN_SHARK_MINI_FRM_MAIN_WINDOW_H
