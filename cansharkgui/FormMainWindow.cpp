@@ -7,13 +7,22 @@
 #include <QSerialPortInfo>
 
 #include <thread>
+#include <QMessageBox>
 #include "RecordTableModel.h"
 
 namespace dd::forms {
+    /**
+     * Basic constructor
+     * @param parent
+     */
     FormMainWindow::FormMainWindow(QWidget *parent) :
-            QWidget(parent), ui(new Ui::FormMainWindow) {
+            QWidget(parent),
+            ui(new Ui::FormMainWindow),
+            m_dataThread(new libcanshark::threads::DataParserThread(this)) {
+
         ui->setupUi(this);
 
+        //Connect UI events
         connect(ui->connectButton, &QPushButton::released,
                 this, &FormMainWindow::connectClicked);
 
@@ -29,201 +38,138 @@ namespace dd::forms {
         connect(ui->updateDeviceFirmwareButton, &QPushButton::released,
                 this, &FormMainWindow::updateClicked);
 
-        connect(ui->saveRecordedDataButton, &QPushButton::released,
+        connect(ui->saveCaptureButton, &QPushButton::released,
                 this, &FormMainWindow::saveRecordedDataClicked);
 
-        connect(ui->clearOutputLogButton, &QPushButton::released,
-                this, &FormMainWindow::clearLogOutput);
-
-        connect(&canSharkThread, &dd::libcanshark::threads::SerialThread::error,
-                this, &FormMainWindow::serialError);
-
-        connect(&canSharkThread, &dd::libcanshark::threads::SerialThread::warn,
-                this, &FormMainWindow::serialWarn);
-
-        connect(&canSharkThread, &dd::libcanshark::threads::SerialThread::message,
-                this, &FormMainWindow::serialMessage);
-
-        connect(&dataThread, &dd::libcanshark::threads::DataParserThread::dataReady,
+        //Connect the data thread data ready signal
+        connect(m_dataThread, &dd::libcanshark::threads::DataParserThread::dataReady,
                 this, &FormMainWindow::parsedDataReady);
-
 
         this->ui->disconnectButton->setEnabled(false);
         this->ui->stopButton->setEnabled(false);
 
-        recordTableModelPtr = std::make_unique<models::RecordTableModel>(ui->recordTable);
-        this->ui->recordTable->setModel((QAbstractTableModel*)recordTableModelPtr.get());
+        m_recordTableModelPtr = std::make_unique<models::RecordTableModel>(ui->recordTable);
+        this->ui->recordTable->setModel((QAbstractTableModel *) m_recordTableModelPtr.get());
 
-        for(const auto& serial_port : QSerialPortInfo::availablePorts()) {
-            std::cout << serial_port.portName().toStdString() << " "
-                      << serial_port.description().toStdString() << " "
-                      << serial_port.manufacturer().toStdString() << " "
-                      << serial_port.serialNumber().toStdString() << " "
-            << std::endl;
 
-            //TODO: Find the name on linux distros, below is windows and mac
-            if(serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) {
-                std::stringstream name_ss;
-                name_ss << "CAN Shark Mini on " << serial_port.portName().toStdString();
+        // Create a CanShark object
+        // TODO: Create the driver based on which device is connected
+        m_canShark = new libcanshark::drivers::CanSharkMini(m_dataThread, this);
 
-                this->ui->deviceSelectionComboBox->addItem(QString::fromStdString(name_ss.str()), {serial_port.portName()});
-            }
+        assert(m_canShark != nullptr);
+
+        connect(m_canShark, &dd::libcanshark::drivers::CanShark::statusMessage,
+                this, &FormMainWindow::canSharkMessage);
+        connect(m_canShark, &dd::libcanshark::drivers::CanShark::errorMessage,
+                this, &FormMainWindow::canSharkError);
+
+        for(const auto& port : m_canShark->getAvailablePorts()) {
+            this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
     }
 
+    /**
+     * Basic destructor
+     */
     FormMainWindow::~FormMainWindow() {
+        assert(m_dataThread != nullptr);
+        delete m_canShark;
+
+        if(m_dataThread->isRunning())
+            m_dataThread->stop();
+
         delete ui;
     }
 
+    /**
+     * Sets the status statusMessage on the bottom of the UI
+     * @param message
+     */
+    void FormMainWindow::setStatusMessage(const QString &message, QColor color) {
+        QPalette labelPalette = this->ui->statusLabel->palette();
+        labelPalette.setColor(this->ui->statusLabel->foregroundRole(), color);
+        this->ui->statusLabel->setPalette(labelPalette);
+        this->ui->statusLabel->setText(message);
+    }
+
+    //// PRIVATE SLOTS
+
+    /**
+     * Called when the user clicks connect
+     */
     void FormMainWindow::connectClicked() {
-        canSharkThread.connect(this->ui->deviceSelectionComboBox->currentData().toString(), 1000);
-        this->ui->disconnectButton->setEnabled(true);
+        assert(m_canShark != nullptr);
+        if(!m_canShark->openConnection(tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+            QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on /dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
+
         this->ui->connectButton->setEnabled(false);
+        this->ui->disconnectButton->setEnabled(true);
     }
 
+    /**
+     * Called when the user clicks disconnect
+     */
     void FormMainWindow::disconnectClicked() {
-        canSharkThread.disconnect();
-        this->ui->disconnectButton->setEnabled(false);
+        if(!m_canShark->closeConnection())
+            QMessageBox::critical(this, tr("Could not disconnect!"), tr("Could not disconnect from target!"));
+
         this->ui->connectButton->setEnabled(true);
+        this->ui->disconnectButton->setEnabled(false);
     }
 
+    /**
+     * Called when the users clicks start recording
+     */
     void FormMainWindow::startClicked() {
-        canSharkThread.startRecording();
-        dataThread.init(canSharkThread);
+        if(!m_canShark->startRecording(0))
+            return;
 
         this->ui->startButton->setEnabled(false);
         this->ui->stopButton->setEnabled(true);
     }
 
+    /**
+     * Called when the user clicks stop recording
+     */
     void FormMainWindow::stopClicked() {
-        canSharkThread.stopRecording();
+        if(!m_canShark->stopRecording())
+            return;
 
         this->ui->startButton->setEnabled(true);
         this->ui->stopButton->setEnabled(false);
     }
 
-    void split(const QByteArray & a,
-               QList<QByteArray> & l,
-               int n)
-    {
-        for (int i = 0; i < a.size(); i += n)
-            l.push_back(a.mid(i, n));
-    }
-
+    /**
+     * Called when the user clicks update
+     */
     void FormMainWindow::updateClicked() {
-        return;
-//
-//        if(port.isOpen()) {
-//            auto file_name =
-//                    QFileDialog::getOpenFileName(
-//                            this,
-//                            tr("Select Update"),
-//                            "/home",
-//                            tr("Update Files (*.csu)"));
-//
-//            QFile input(file_name);
-//
-//            if(!input.open(QFile::OpenModeFlag::ReadOnly))
-//                return;
-//
-//            port.write(QByteArray::fromStdString("u")); //Put in update mode
-//
-//            qint64 update_size = input.size();
-//
-//            port.write(reinterpret_cast<const char *>(&update_size), sizeof(qint64));
-//
-//            port.flush();
-//
-//            //Wait for update mode to kick in
-//            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//
-//            QByteArray file_data = input.readAll();
-//            QList<QByteArray> lines;
-//
-//            split(file_data, lines, 512);
-//
-//            qint64 progress_count = 0;
-//
-//            for(const auto& line : lines) {
-//                qint64 written_count = port.write(line);
-//                port.flush();
-//
-//                progress_count += written_count;
-//
-//                std::cout << "Wrote: " << written_count << " bytes" << std::endl;
-//                std::cout << progress_count << " of " << file_data.size() << std::endl;
-//
-//                port.waitForReadyRead(100);
-//                auto data = port.readAll();
-//
-//                std::cout << "Read: " << data.size() << std::endl;
-//            }
-//
-////            while(!input.atEnd()) {
-////
-////                QByteArray line = input.readLine();
-////                qint64 written_count = port.write(line);
-////
-////                std::cout << line.size() << " == " << written_count << std::endl;
-////                assert(line.size() == written_count);
-////
-////                port.flush();
-////
-////                while(port.bytesToWrite() != 0){
-////                    port.waitForBytesWritten(10);
-////                }
-////
-//////                if(!port.waitForBytesWritten(100)) {
-//////                    std::cout << "Error writting bytes" << std::endl;
-//////                }
-////            }
-//
-////            for(const auto& byte : file_data.toStdString()) {
-////                port.write(reinterpret_cast<const char *>(byte));
-////                port.
-////                auto read_data = port.readAll();
-////
-////                for(const auto& read_byte : read_data) {
-////                    std::cout << std::hex << read_byte << " ";
-////                }
-////                std::cout << std::endl;
-////            }
-//
-//
-////            port.write(file_data);
-//
-//        }
+        //TODO Implement this method
+        m_canShark->updateFirmware("");
     }
 
+    /**
+     * Called when the user clicks save recorded data
+     */
     void FormMainWindow::saveRecordedDataClicked() {
         //TODO Implement this
     }
 
-    void FormMainWindow::serialError(const QString &s) {
-        this->ui->outputText->appendPlainText("ERROR: ");
-        this->ui->outputText->appendPlainText(s);
-        this->ui->outputText->appendPlainText("\n");
-    }
-
-    void FormMainWindow::serialWarn(const QString &s) {
-        this->ui->outputText->appendPlainText("WARN: ");
-        this->ui->outputText->appendPlainText(s);
-        this->ui->outputText->appendPlainText("\n");
-    }
-
-    void FormMainWindow::clearLogOutput() {
-        this->ui->outputText->clear();
-    }
-
-    void FormMainWindow::serialMessage(const QString &s) {
-        this->ui->outputText->appendPlainText(s);
-        this->ui->outputText->appendPlainText("\n");
-    }
-
-    void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem>& data) {
+    /**
+     * Called when the DataParserThread has data ready to be added
+     * @param data
+     */
+    void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem> &data) {
         for (auto &row: data) {
-            recordTableModelPtr->addRow(row);
+            m_recordTableModelPtr->addRow(row);
         }
+    }
+
+    void FormMainWindow::canSharkMessage(const QString &message) {
+        setStatusMessage(message);
+    }
+
+    void FormMainWindow::canSharkError(const QString &message) {
+        setStatusMessage(message, Qt::red);
     }
 
 } // dd::forms

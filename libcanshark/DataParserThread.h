@@ -4,10 +4,8 @@
 #include <QThread>
 #include <QMutex>
 #include "RecordItem.h"
-#include "SerialThread.h"
 
 namespace dd::libcanshark::threads {
-
     class DataParserThread : public QThread {
         Q_OBJECT
 
@@ -15,7 +13,9 @@ namespace dd::libcanshark::threads {
         explicit DataParserThread(QObject* parent = nullptr);
         ~DataParserThread() override;
 
-        void init(SerialThread& serialThread);
+        void init();
+
+        void stop();
 
     protected:
         void run() Q_DECL_OVERRIDE;
@@ -28,6 +28,28 @@ namespace dd::libcanshark::threads {
         QString packetHexString;
         QList<QString> packetHexStrings;
         QList<data::RecordItem> packets;
+
+        template<typename T>
+        std::vector<T> hex2bytes(const std::string& s)
+        {
+            constexpr size_t width = sizeof(T) * 2;
+            std::vector<T> v;
+            v.reserve((s.size() + width - 1) / width);
+            for (auto it = s.crbegin(); it < s.crend(); it += width)
+            {
+                try {
+                    auto begin = std::min(s.crend(), it + width).base();
+                    auto end = it.base();
+                    std::string slice(begin, end);
+                    T value = std::stoul(slice, 0, 16);
+                    v.push_back(value);
+                } catch(std::exception& e) {
+                    return {};
+                }
+            }
+            return v;
+        }
+
 
     public slots:
         void serialDataReceived(const QString& data);

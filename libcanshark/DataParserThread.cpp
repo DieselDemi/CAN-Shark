@@ -7,7 +7,12 @@ namespace dd::libcanshark::threads {
 
     DataParserThread::DataParserThread(QObject *parent)
         : QThread(parent)
-    {}
+    {
+        // Register a meta type ???
+        typedef QList<dd::libcanshark::data::RecordItem> recordItem;
+        qRegisterMetaType<recordItem>("QList<dd::libcanshark::data::RecordItem>&");
+        init();
+    }
 
     DataParserThread::~DataParserThread()
     {
@@ -17,12 +22,9 @@ namespace dd::libcanshark::threads {
         wait();
     }
 
-    void DataParserThread::init(SerialThread& serialThread)
+    void DataParserThread::init()
     {
         QMutexLocker locker(&mutex);
-
-        connect(&serialThread, &dd::libcanshark::threads::SerialThread::response,
-                this, &dd::libcanshark::threads::DataParserThread::serialDataReceived);
 
         if(!isRunning())
         {
@@ -39,73 +41,73 @@ namespace dd::libcanshark::threads {
 //                continue;
 
             for (auto &packet: packetHexStrings) {
-                QList<QString> byteStrings;
+                auto packetHexData = hex2bytes<uint8_t>(packet.toStdString());
 
-                assert(packet.size() % 2 == 0);
-
-                for (qsizetype i = 0; i < packet.size(); i += 2) {
-                    QString byteString = packet.mid(i, 2);
-                    byteStrings.append(byteString);
-                }
-
-                if (byteStrings.empty())
+                if(packetHexData.empty())
                     continue;
 
-                QString lengthString;
+                std::reverse(packetHexData.begin(), packetHexData.end());
 
-                lengthString = byteStrings[3] +
-                               byteStrings[2] +
-                               byteStrings[1] +
-                               byteStrings[0];
+                // Get the statusMessage length
+                uint32_t messageLength = 0;
+                memcpy(&messageLength, packetHexData.data(), sizeof(uint32_t));
+                messageLength = ntohl(messageLength);
 
-                bool bConvertedOk = false;
+                // Get the us delta time
+                uint32_t usDeltaTime = 0;
+                memcpy(&usDeltaTime, packetHexData.data() + sizeof(uint32_t), sizeof(uint32_t));
+                usDeltaTime = ntohl(usDeltaTime);
 
-                size_t length = lengthString.toULong(&bConvertedOk, 16);
-                assert(bConvertedOk);
+                // Get the type
+                uint16_t type = 0;
+                memcpy(&type, packetHexData.data() + sizeof(uint32_t) + sizeof(uint32_t), sizeof(uint16_t));
+                type = ntohs(type);
 
-                auto dataLen = (qsizetype) (length - sizeof(uint16_t));
-                uint8_t packetData[dataLen];
+                // Get the ID
+                uint32_t id = 0;
+                memcpy(&id, packetHexData.data() + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint16_t), sizeof(uint32_t));
+                id = ntohl(id);
 
-                for (qsizetype i = 0; i < dataLen; i++) {
-                    bConvertedOk = false;
-                    packetData[dataLen - i] = (uint8_t) byteStrings[4 + i].toUShort(&bConvertedOk, 16);
-                    assert(bConvertedOk);
+                size_t canDataLength = messageLength - (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t));
+                uint8_t canData[canDataLength];
+                memcpy(&canData, packetHexData.data() + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t), canDataLength);
+
+                uint16_t crc16 = 0;
+                memcpy(&crc16, packetHexData.data() + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t) + canDataLength, sizeof(uint16_t));
+                crc16 = ntohs(crc16);
+
+#ifdef _DEBUG
+                for(const auto& byte : packetHexData) {
+                    printf("%02x ", byte);
                 }
 
-                QString crcString = byteStrings[4 + dataLen + 1] +
-                                    byteStrings[4 + dataLen];
-
-                bConvertedOk = false;
-                uint16_t crc = crcString.toUShort(&bConvertedOk, 16);
-                assert(bConvertedOk);
-
-                uint64_t time = 0;
-                uint16_t type = 0;
-                uint32_t id = 0;
-                size_t canDataLen = dataLen - 8 + 2 + 4;
-                auto *canData = (uint8_t *) malloc(sizeof(uint8_t) * canDataLen);
-
-                memcpy(&time, packetData, 8);
-                memcpy(&type, packetData + 9, 2);
-                memcpy(&id, packetData + 11, 4);
-                memcpy(&canData, packetData + 15, dataLen);
+                std::cout << std::endl
+                          << "Len: " << messageLength
+                          << " Delta us Time: " << usDeltaTime
+                          << " Type: " << static_cast<dd::libcanshark::recordItem::CanFrameType>(type)
+                          << " ID: " << id
+                          << " Can Data Length: " << canDataLength
+                          << " CRC16: " << crc16 << std::endl;
+#endif
 
                 //1. Convert hex string to a record item
-                dd::libcanshark::data::RecordItem data = {
-                        .total_size = (uint32_t) dataLen,
+                dd::libcanshark::data::RecordItem recordItem = {
+                        .total_size = (uint32_t) messageLength,
                         .type = static_cast<dd::libcanshark::data::CanFrameType>(type),
-                        .time = time,
-                        .id = id,
-                        .data = canData,
-                        .crc16 = crc
+                        .time = usDeltaTime,
+                        .crc16 = crc16
                 };
+
+                recordItem.canDataLength = canDataLength;
+                recordItem.data = (uint8_t*)malloc(sizeof(uint8_t) * canDataLength);
+                memcpy(recordItem.data, &canData, canDataLength);
 
                 //Remove the hex string from the list
                 packetHexStrings.removeIf([&packet](const QString& t)->bool {
                    return t == packet;
                 });
 
-                packets.emplace_back(data);
+                packets.emplace_back(recordItem);
             }
             mutex.unlock();
 
@@ -134,5 +136,9 @@ namespace dd::libcanshark::threads {
                 packetHexString.append(c);
             }
         }
+    }
+
+    void DataParserThread::stop() {
+        this->running = false;
     }
 } // threads

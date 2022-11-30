@@ -3,9 +3,9 @@
 
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
-#include "SerialThread.h"
 #include "RecordTableModel.h"
 #include "DataParserThread.h"
+#include "drivers/CanSharkDrivers.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -21,15 +21,15 @@ namespace dd::forms {
         ~FormMainWindow() override;
 
     private:
-        dd::libcanshark::threads::SerialThread canSharkThread;
-        dd::libcanshark::threads::DataParserThread dataThread;
         Ui::FormMainWindow *ui;
 
-        QString packetHexString;
-        bool bAppendToPacket = false;
-        QList<QString> packetHexStrings;
+        dd::libcanshark::threads::DataParserThread* m_dataThread = nullptr;
 
-        std::unique_ptr<models::RecordTableModel> recordTableModelPtr;
+        dd::libcanshark::drivers::CanShark* m_canShark = nullptr;
+
+        std::unique_ptr<models::RecordTableModel> m_recordTableModelPtr;
+
+        void setStatusMessage(const QString &message, QColor color = Qt::white);
 
     private slots:
         void connectClicked();
@@ -38,11 +38,9 @@ namespace dd::forms {
         void stopClicked();
         void updateClicked();
         void saveRecordedDataClicked();
-        void clearLogOutput();
 
-        void serialMessage(const QString& s);
-        void serialError(const QString& s);
-        void serialWarn(const QString& s);
+        void canSharkMessage(QString const& message);
+        void canSharkError(QString const& message);
 
         void parsedDataReady(QList<dd::libcanshark::data::RecordItem>& data);
     };
