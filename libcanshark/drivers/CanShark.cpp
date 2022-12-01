@@ -39,9 +39,11 @@ namespace dd::libcanshark::drivers {
 
         const QByteArray responseData = m_serial->readAll();
 
-        std::cout << responseData.toStdString() << std::endl;
+
+//        b_ready = std::equal(responseData.begin(), responseData.end(), "READY");
 
         assert(responseData.size() > 0);
+
         emit statusMessage(tr("Received Message of %1bytes").arg(responseData.size()));
         emit serialDataReceived(responseData);
 

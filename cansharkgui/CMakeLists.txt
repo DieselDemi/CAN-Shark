@@ -17,8 +17,9 @@ find_package(Qt6 COMPONENTS
         REQUIRED)
 
 include_directories(../libcanshark)
+include_directories(../QHexView)
 
-add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui ../libcanshark/RecordItem.h RecordTableModel.cpp RecordTableModel.h)
+add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
 
 target_link_libraries(CanShark
         Qt6::Core
@@ -26,6 +27,7 @@ target_link_libraries(CanShark
         Qt6::Widgets
         Qt6::SerialPort
         libcanshark
+        qhexview-lib
         )
 
 if (WIN32)

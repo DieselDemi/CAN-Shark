@@ -5,6 +5,7 @@
 #include <QTableView>
 #include <iostream>
 #include "RecordTableModel.h"
+#include "FormInspect.h"
 
 namespace dd::forms::models {
     RecordTableModel::RecordTableModel(QObject *parent)
@@ -134,7 +135,18 @@ namespace dd::forms::models {
     }
 
     void RecordTableModel::inspectButtonClicked(int row) {
-        std::cout << rowsList.at(row).id << std::endl;
+//        std::cout << rowsList.at(row).id << std::endl;
+
+        delete m_inspectForm;
+
+        libcanshark::data::RecordItem rowItem = getRecord(row);
+
+        auto* inspectForm = new FormInspect(
+                QByteArray::fromRawData(reinterpret_cast<const char *>(rowItem.data),
+                                        (qsizetype)rowItem.canDataLength));
+
+
+        inspectForm->show();
 
     }
 

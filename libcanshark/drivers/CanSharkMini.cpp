@@ -31,21 +31,19 @@ namespace dd::libcanshark::drivers {
         if (m_serial->open(QIODevice::ReadWrite)) {
             emit statusMessage(tr("Connected to CanShark Mini on %1").arg(portName));
 
-            m_serial->setDataTerminalReady(true);
+            m_serial->setDataTerminalReady(false);
             m_serial->setRequestToSend(true);
-
-            QThread::msleep(5);
-
-            m_serial->setDataTerminalReady(true);
+            m_serial->setRequestToSend(m_serial->isRequestToSend());
+            QThread::msleep(20);
             m_serial->setRequestToSend(false);
+
             return true;
         } else {
-            emit errorMessage(tr("Open errorMessage %1").arg(m_serial->errorString()));
+            emit errorMessage(tr("Open error %1").arg(m_serial->errorString()));
             return false;
         }
 
     }
-
 
     /**
      * Closes the serial port if the port is open
@@ -192,6 +190,8 @@ namespace dd::libcanshark::drivers {
 //            port.write(file_data);
 //
 //        }
+
+        return false;
     }
 
 

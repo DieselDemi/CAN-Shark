@@ -95,6 +95,7 @@ namespace dd::libcanshark::threads {
                         .total_size = (uint32_t) messageLength,
                         .type = static_cast<dd::libcanshark::data::CanFrameType>(type),
                         .time = usDeltaTime,
+                        .id = id,
                         .crc16 = crc16
                 };
 

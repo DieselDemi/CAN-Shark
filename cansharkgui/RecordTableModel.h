@@ -3,6 +3,7 @@
 
 #include <QAbstractTableModel>
 #include <RecordItem.h>
+#include "FormInspect.h"
 
 namespace dd::forms::models {
     class RecordTableModel : public QAbstractTableModel {
@@ -34,7 +35,7 @@ namespace dd::forms::models {
 
     private:
         QList<libcanshark::data::RecordItem> rowsList;
-
+        FormInspect* m_inspectForm = nullptr;
     };
 } // models
 

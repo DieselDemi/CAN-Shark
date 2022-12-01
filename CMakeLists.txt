@@ -19,4 +19,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out/bin)
 include_directories(include)
 
 add_subdirectory(libcanshark)
+add_subdirectory(QHexView)
 add_subdirectory(cansharkgui)
