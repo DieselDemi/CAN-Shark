@@ -5,3 +5,5 @@
 /cmake-build-relwithdebinfo
 /cmake-build-debug-qt-6-mingw
 /cmake-build-release-qt-6-mingw
+.DS_Store
+*.DS_Store
