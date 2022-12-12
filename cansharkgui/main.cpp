@@ -1,20 +1,14 @@
 #include <QApplication>
-#include <QPushButton>
 
 #include "FormMainWindow.h"
+#include "BaseTheme.h"
 
 int main(int argc, char *argv[]) {
     QApplication a(argc, argv);
 
     dd::forms::FormMainWindow window;
-//    window.setStyleSheet(dd::forms::style::style);
+    window.setStyleSheet(dd::forms::theme::Dracula2);
     window.show();
-
-//    QPushButton button("Hello world!", nullptr);
-//    button.resize(200, 100);
-//    button.show();
-
-
 
     return QApplication::exec();
 }

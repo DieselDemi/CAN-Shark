@@ -24,7 +24,7 @@ elseif (APPLE)
     set(MACOSX_BUNDLE_ICON_FILE can-shark.icns)
 
     # And this part tells CMake where to find and install the file itself
-    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/images/can-shark.icns)
+    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/images/can-shark.icns BaseTheme.h)
     set_source_files_properties(${app_ICONS} PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
 
