@@ -19,7 +19,22 @@ find_package(Qt6 COMPONENTS
 include_directories(../libcanshark)
 include_directories(../QHexView)
 
-add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+if (WIN32)
+    add_executable(CanShark WIN_32 main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+elseif (APPLE)
+    # NOTE: Don't include the path in MACOSX_BUNDLE_ICON_FILE -- this is
+    # the property added to Info.plist
+    set(MACOSX_BUNDLE_ICON_FILE can-shark.icns)
+
+    # And this part tells CMake where to find and install the file itself
+    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/images/can-shark.icns)
+    set_source_files_properties(${app_ICONS} PROPERTIES
+            MACOSX_PACKAGE_LOCATION "Resources")
+
+    add_executable(CanShark MACOSX_BUNDLE ${app_ICONS} main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+else (UNIX AND NOT APPLE)
+    add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+endif ()
 
 target_link_libraries(CanShark
         Qt6::Core
@@ -57,6 +72,9 @@ if (WIN32)
                 "${QT_INSTALL_PATH}/bin/Qt5${QT_LIB}${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
+    install(TARGETS CanShark RUNTIME DESTINATION bin)
+elseif (APPLE)
+    install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
+elseif (UNIX AND NOT APPLE)
+    install(TARGETS CanShark RUNTIME DESTINATION bin)
 endif ()
-
-install(TARGETS CanShark RUNTIME DESTINATION bin)

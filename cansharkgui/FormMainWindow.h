@@ -39,6 +39,9 @@ namespace dd::forms {
         void updateClicked();
         void saveRecordedDataClicked();
 
+        void defaultRadioButtonClicked(bool checked);
+        void onlyShowUniqueRadioButtonClicked(bool checked);
+
         void canSharkMessage(QString const& message);
         void canSharkError(QString const& message);
 

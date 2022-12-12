@@ -50,6 +50,24 @@
       </widget>
      </item>
      <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_4">
+       <item>
+        <widget class="QRadioButton" name="defaultRadioButton">
+         <property name="text">
+          <string>Default</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="onlyShowUniqueRadioButton">
+         <property name="text">
+          <string>Only Show Unique</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
         <widget class="QScrollArea" name="dataContainerScrollArea">
@@ -62,7 +80,7 @@
             <x>0</x>
             <y>0</y>
             <width>970</width>
-            <height>679</height>
+            <height>649</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
