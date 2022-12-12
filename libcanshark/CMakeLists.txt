@@ -35,7 +35,13 @@ set(SRCS
 
 add_library(libcanshark STATIC ${SRCS})
 
-target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort)
+if(WIN32)
+    target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort ws2_32)
+elseif(APPLE)
+    target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort)
+elseif(UNIX AND NOT APPLE)
+    target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort)
+endif()
 
 install(TARGETS libcanshark
         LIBRARY DESTINATION lib

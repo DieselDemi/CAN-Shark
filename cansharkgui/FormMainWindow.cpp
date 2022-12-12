@@ -99,8 +99,14 @@ namespace dd::forms {
      */
     void FormMainWindow::connectClicked() {
         assert(m_canShark != nullptr);
+
+#ifdef WIN32
+        if(!m_canShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+            QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on %1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
+#else
         if(!m_canShark->openConnection(tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
             QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on /dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
+#endif
 
         this->ui->connectButton->setEnabled(false);
         this->ui->disconnectButton->setEnabled(true);

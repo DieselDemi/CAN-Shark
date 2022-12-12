@@ -3,6 +3,10 @@
 
 #define SIZE_THRESHOLD 100
 
+#ifdef _WIN32
+#include "winsock2.h"
+#endif
+
 namespace dd::libcanshark::threads {
 
     DataParserThread::DataParserThread(QObject *parent)
