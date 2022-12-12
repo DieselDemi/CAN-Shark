@@ -41,12 +41,17 @@ namespace dd::forms {
         connect(ui->saveCaptureButton, &QPushButton::released,
                 this, &FormMainWindow::saveRecordedDataClicked);
 
+        connect(ui->defaultRadioButton, &QRadioButton::clicked, this, &FormMainWindow::defaultRadioButtonClicked);
+        connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this, &FormMainWindow::onlyShowUniqueRadioButtonClicked);
+
         //Connect the data thread data ready signal
         connect(m_dataThread, &dd::libcanshark::threads::DataParserThread::dataReady,
                 this, &FormMainWindow::parsedDataReady);
 
         this->ui->disconnectButton->setEnabled(false);
         this->ui->stopButton->setEnabled(false);
+
+        this->ui->defaultRadioButton->setChecked(true);
 
         m_recordTableModelPtr = std::make_unique<models::RecordTableModel>(ui->recordTable);
         this->ui->recordTable->setModel((QAbstractTableModel *) m_recordTableModelPtr.get());
@@ -176,6 +181,14 @@ namespace dd::forms {
 
     void FormMainWindow::canSharkError(const QString &message) {
         setStatusMessage(message, Qt::red);
+    }
+
+    void FormMainWindow::defaultRadioButtonClicked(bool checked) {
+        this->ui->onlyShowUniqueRadioButton->setChecked(!checked);
+    }
+
+    void FormMainWindow::onlyShowUniqueRadioButtonClicked(bool checked) {
+        this->ui->defaultRadioButton->setChecked(!checked);
     }
 
 } // dd::forms
