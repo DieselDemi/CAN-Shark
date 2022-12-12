@@ -3,3 +3,5 @@
 /cmake-build-minsizerel
 /cmake-build-release
 /cmake-build-relwithdebinfo
+/cmake-build-debug-qt-6-mingw
+/cmake-build-release-qt-6-mingw
