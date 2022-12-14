@@ -7,9 +7,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-#set(CMAKE_PREFIX_PATH "C:/Qt5.13/5.15.2/msvc2019_64")
-#set(CMAKE_PREFIX_PATH "/opt/homebrew/Cellar/qt/6.3.1_4")
-
 find_package(Qt6 COMPONENTS
         Core
         SerialPort
@@ -37,9 +34,7 @@ add_library(libcanshark STATIC ${SRCS})
 
 if(WIN32)
     target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort ws2_32)
-elseif(APPLE)
-    target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort)
-elseif(UNIX AND NOT APPLE)
+else()
     target_link_libraries(libcanshark Qt6::Core Qt6::SerialPort)
 endif()
 

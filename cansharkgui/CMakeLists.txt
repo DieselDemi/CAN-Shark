@@ -42,7 +42,7 @@ target_link_libraries(CanShark
         qhexview-lib
         )
 
-if (WIN32)
+if (WIN32 AND NOT DEBUG)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
         set(DEBUG_SUFFIX "d")
@@ -73,9 +73,8 @@ if (WIN32)
             COMMAND ${CMAKE_COMMAND} -E copy
             "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
             "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-    install(TARGETS CanShark RUNTIME DESTINATION bin)
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
-elseif (UNIX AND NOT APPLE)
+else()
     install(TARGETS CanShark RUNTIME DESTINATION bin)
 endif ()
