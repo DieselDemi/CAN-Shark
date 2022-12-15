@@ -1,5 +1,7 @@
 # Can Shark PC Software
 
-## TODO
-1. Move parsing into own thread
-2. Rewrite the serial connection and read thread
+## For the CAN Shark mini CAN bus logging device. 
+
+Find it on https://dieseldemi.com
+
+Currently early release stage. Built daily.
