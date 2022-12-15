@@ -37,12 +37,7 @@ else (UNIX AND NOT APPLE)
     add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
 endif ()
 
-if (WIN32)
-    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib -static gcc stdc++ winpthread -dynamic)
-    #This is bad but I don't know what else to do need to RTFM on CMAKE static libraries
-else ()
-    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
-endif ()
+target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 
 if (WIN32 AND NOT DEBUG)
     set(DEBUG_SUFFIX)
@@ -71,10 +66,18 @@ if (WIN32 AND NOT DEBUG)
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
-    #    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    #            COMMAND ${CMAKE_COMMAND} -E copy
-    #            "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
-    #            "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libgcc_s_seh-1.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                "${QT_INSTALL_PATH}/bin/libwinpthread-1.dll"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 else ()
