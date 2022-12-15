@@ -38,7 +38,7 @@ else (UNIX AND NOT APPLE)
 endif ()
 
 if (WIN32)
-    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib -static gcc stdc++ /home/demi/mxe/usr/x86_64-w64-mingw32.static/lib/winpthread -dynamic) #This is bad but I don't know what else to do need to RTFM on CMAKE static libraries
+    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib -static gcc stdc++ /home/demi/mxe/usr/x86_64-w64-mingw32.static/lib/libwinpthread.a -dynamic) #This is bad but I don't know what else to do need to RTFM on CMAKE static libraries
 else ()
     target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 endif ()
