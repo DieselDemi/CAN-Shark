@@ -17,9 +17,9 @@ include_directories(../libcanshark)
 include_directories(../QHexView)
 
 if (WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
-#    set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
-#    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lpthread -Wl,-Bdynamic,--no-whole-archive")
+    #    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")
+    #    set(CMAKE_CXX_STANDARD_LIBRARIES "-static-libgcc -static-libstdc++ -lwsock32 -lws2_32 ${CMAKE_CXX_STANDARD_LIBRARIES}")
+    #    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Bstatic,--whole-archive -lpthread -Wl,-Bdynamic,--no-whole-archive")
 
     add_executable(CanShark WIN32 main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
 elseif (APPLE)
@@ -37,14 +37,11 @@ else (UNIX AND NOT APPLE)
     add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
 endif ()
 
-target_link_libraries(CanShark
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::SerialPort
-        libcanshark
-        qhexview-lib
-        )
+if (WIN32)
+    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib -static gcc stdc++ winpthread -dynamic)
+else ()
+    target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
+endif ()
 
 if (WIN32 AND NOT DEBUG)
     set(DEBUG_SUFFIX)
@@ -73,12 +70,12 @@ if (WIN32 AND NOT DEBUG)
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
-#    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-#            COMMAND ${CMAKE_COMMAND} -E copy
-#            "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
-#            "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+    #    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    #            COMMAND ${CMAKE_COMMAND} -E copy
+    #            "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
+    #            "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
-else()
+else ()
     install(TARGETS CanShark RUNTIME DESTINATION bin)
 endif ()
