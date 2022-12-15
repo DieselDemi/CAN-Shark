@@ -39,7 +39,7 @@ endif ()
 
 target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 
-if (WIN32 AND NOT DEBUG)
+if (WIN32 AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
         set(DEBUG_SUFFIX "d")
