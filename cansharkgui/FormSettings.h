@@ -1,7 +1,3 @@
-//
-// Created by Demi on 2022-12-16.
-//
-
 #ifndef CANSHARK_FORMSETTINGS_H
 #define CANSHARK_FORMSETTINGS_H
 

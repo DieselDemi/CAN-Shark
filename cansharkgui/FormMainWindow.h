@@ -6,6 +6,7 @@
 #include "RecordTableModel.h"
 #include "DataParserThread.h"
 #include "drivers/CanSharkDrivers.h"
+#include "FormSettings.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -29,6 +30,8 @@ namespace dd::forms {
 
         std::unique_ptr<models::RecordTableModel> m_recordTableModelPtr;
 
+        FormSettings* m_formSettings = nullptr;
+
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 
     private slots:
@@ -38,6 +41,7 @@ namespace dd::forms {
         void stopClicked();
         void updateClicked();
         void saveRecordedDataClicked();
+        void settingsButtonClicked();
 
         void defaultRadioButtonClicked(bool checked);
         void onlyShowUniqueRadioButtonClicked(bool checked);

@@ -9,6 +9,7 @@
 #include <thread>
 #include <QMessageBox>
 #include "RecordTableModel.h"
+#include "FormSettings.h"
 
 namespace dd::forms {
     /**
@@ -40,6 +41,9 @@ namespace dd::forms {
 
         connect(ui->saveCaptureButton, &QPushButton::released,
                 this, &FormMainWindow::saveRecordedDataClicked);
+
+        connect(ui->settingsButton, &QPushButton::released,
+                this, &FormMainWindow::settingsButtonClicked);
 
         connect(ui->defaultRadioButton, &QRadioButton::clicked, this, &FormMainWindow::defaultRadioButtonClicked);
         connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this, &FormMainWindow::onlyShowUniqueRadioButtonClicked);
@@ -189,6 +193,15 @@ namespace dd::forms {
 
     void FormMainWindow::onlyShowUniqueRadioButtonClicked(bool checked) {
         this->ui->defaultRadioButton->setChecked(!checked);
+    }
+
+    void FormMainWindow::settingsButtonClicked() {
+        if(m_formSettings == nullptr) {
+            this->m_formSettings = new FormSettings();
+            this->m_formSettings->show();
+        } else {
+            this->m_formSettings->show();
+        }
     }
 
 } // dd::forms
