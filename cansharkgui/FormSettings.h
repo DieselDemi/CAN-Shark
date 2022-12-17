@@ -2,6 +2,7 @@
 #define CANSHARK_FORMSETTINGS_H
 
 #include <QWidget>
+#include "drivers/CanShark.h"
 
 namespace dd::forms {
     QT_BEGIN_NAMESPACE
@@ -12,7 +13,7 @@ namespace dd::forms {
     Q_OBJECT
 
     public:
-        explicit FormSettings(QApplication* app, QWidget *parent = nullptr);
+        explicit FormSettings(QApplication* app, dd::libcanshark::drivers::CanShark* canShark, QWidget *parent = nullptr);
 
         ~FormSettings() override;
 
@@ -20,13 +21,17 @@ namespace dd::forms {
         Ui::FormSettings *ui;
         QApplication* ptr_mainApplication = nullptr;
 
+        dd::libcanshark::drivers::CanShark* ptr_driverCanShark = nullptr;
+
+        QString selectedDevicePort;
+
+        void updateDeviceLabelText();
+
     private slots:
         void okButtonClicked();
-        void cancelButtonClicked();
 
         void themeComboBoxIndexChanged(int idx);
-        void connectButtonClicked();
-        void disconnectButtonClicked();
+        void deviceComboBoxIndexChanged(int idx);
 
         void saveToDeviceButtonClicked();
     };

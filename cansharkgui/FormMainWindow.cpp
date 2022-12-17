@@ -14,12 +14,11 @@ namespace dd::forms {
      * Basic constructor
      * @param parent
      */
-    FormMainWindow::FormMainWindow(QApplication* app, QWidget *parent) :
+    FormMainWindow::FormMainWindow(QApplication *app, QWidget *parent) :
             QWidget(parent),
             ui(new Ui::FormMainWindow),
             ptr_dataThread(new libcanshark::threads::DataParserThread(this)),
-            ptr_mainApplication(app)
-    {
+            ptr_mainApplication(app) {
 
         ui->setupUi(this);
 
@@ -46,7 +45,8 @@ namespace dd::forms {
                 this, &FormMainWindow::settingsButtonClicked);
 
         connect(ui->defaultRadioButton, &QRadioButton::clicked, this, &FormMainWindow::defaultRadioButtonClicked);
-        connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this, &FormMainWindow::onlyShowUniqueRadioButtonClicked);
+        connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this,
+                &FormMainWindow::onlyShowUniqueRadioButtonClicked);
 
         //Connect the data thread data ready signal
         connect(ptr_dataThread, &dd::libcanshark::threads::DataParserThread::dataReady,
@@ -72,7 +72,7 @@ namespace dd::forms {
         connect(ptr_driverCanShark, &dd::libcanshark::drivers::CanShark::errorMessage,
                 this, &FormMainWindow::canSharkError);
 
-        for(const auto& port : ptr_driverCanShark->getAvailablePorts()) {
+        for (const auto &port: ptr_driverCanShark->getAvailablePorts()) {
             this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
     }
@@ -84,7 +84,7 @@ namespace dd::forms {
         assert(ptr_dataThread != nullptr);
         delete ptr_driverCanShark;
 
-        if(ptr_dataThread->isRunning())
+        if (ptr_dataThread->isRunning())
             ptr_dataThread->stop();
 
         delete ui;
@@ -113,8 +113,11 @@ namespace dd::forms {
         if(!ptr_driverCanShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
             QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on %1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
 #else
-        if(!ptr_driverCanShark->openConnection(tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
-            QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on /dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
+        if (!ptr_driverCanShark->openConnection(
+                tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+            QMessageBox::critical(this, tr("Could not connect!"),
+                                  tr("Could not connect to canshark mini on /dev/%1").arg(
+                                          this->ui->deviceSelectionComboBox->currentData().toString()));
 #endif
 
         this->ui->connectButton->setEnabled(false);
@@ -125,7 +128,7 @@ namespace dd::forms {
      * Called when the user clicks disconnect
      */
     void FormMainWindow::disconnectClicked() {
-        if(!ptr_driverCanShark->closeConnection())
+        if (!ptr_driverCanShark->closeConnection())
             QMessageBox::critical(this, tr("Could not disconnect!"), tr("Could not disconnect from target!"));
 
         this->ui->connectButton->setEnabled(true);
@@ -136,7 +139,7 @@ namespace dd::forms {
      * Called when the users clicks start recording
      */
     void FormMainWindow::startClicked() {
-        if(!ptr_driverCanShark->startRecording(0))
+        if (!ptr_driverCanShark->startRecording(0))
             return;
 
         this->ui->startButton->setEnabled(false);
@@ -147,7 +150,7 @@ namespace dd::forms {
      * Called when the user clicks stop recording
      */
     void FormMainWindow::stopClicked() {
-        if(!ptr_driverCanShark->stopRecording())
+        if (!ptr_driverCanShark->stopRecording())
             return;
 
         this->ui->startButton->setEnabled(true);
@@ -196,8 +199,10 @@ namespace dd::forms {
     }
 
     void FormMainWindow::settingsButtonClicked() {
-        if(ptr_formSettings == nullptr) {
-            this->ptr_formSettings = new FormSettings(this->ptr_mainApplication);
+        if (ptr_formSettings == nullptr) {
+            assert(this->ptr_mainApplication != nullptr);
+            assert(this->ptr_driverCanShark != nullptr);
+            this->ptr_formSettings = new FormSettings(this->ptr_mainApplication, this->ptr_driverCanShark);
             this->ptr_formSettings->show();
         } else {
             this->ptr_formSettings->show();
