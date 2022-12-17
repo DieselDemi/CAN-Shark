@@ -2,6 +2,7 @@
 #include <QSerialPortInfo>
 #include <QMap>
 #include <iostream>
+#include <DataParserThread.h>
 
 namespace dd::libcanshark::drivers {
 
@@ -34,20 +35,21 @@ namespace dd::libcanshark::drivers {
      * Called when QSerialPort fires the correct dataAvailable event
      */
     void CanShark::readData() {
-        if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
+        QByteArray response = m_serial->readAll();
+        if(response.size() <= 0)
             return;
 
-        const QByteArray responseData = m_serial->readAll();
+        if (m_updateMode) {
+            return;
+        } else {
+            if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
+                return;
 
+            emit statusMessage(tr("Received Message of %1bytes").arg(response.size()));
+            emit serialDataReceived(response);
 
-//        b_ready = std::equal(responseData.begin(), responseData.end(), "READY");
-
-        assert(responseData.size() > 0);
-
-        emit statusMessage(tr("Received Message of %1bytes").arg(responseData.size()));
-        emit serialDataReceived(responseData);
-
-        st_recorded_message_count++;
+            st_recorded_message_count++;
+        }
     }
 
     /**
@@ -66,7 +68,7 @@ namespace dd::libcanshark::drivers {
      * @return List of all the available ports
      */
     QList<std::tuple<QString, QString>> &CanShark::getAvailablePorts() {
-        auto* _ret = new QList<std::tuple<QString, QString>>();
+        auto *_ret = new QList<std::tuple<QString, QString>>();
 
         for (const auto &serial_port: QSerialPortInfo::availablePorts()) {
 #ifdef _DEBUG
@@ -78,7 +80,7 @@ namespace dd::libcanshark::drivers {
 #endif
             //TODO: Find the name on linux distros, below is windows and mac
             // Also differentiate between canshark versions
-            if (serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) {
+            if ((serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) && !serial_port.portName().contains("CANSHARKMINI")) {
                 QString name = tr("%1 %2")
                         .arg("CAN Shark Mini on", serial_port.portName());
 

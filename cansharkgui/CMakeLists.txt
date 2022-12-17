@@ -6,43 +6,36 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS
-        Core
-        Gui
-        Widgets
-        SerialPort
-        REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets SerialPort REQUIRED)
 
 include_directories(../libcanshark)
 include_directories(../QHexView)
 
+set(SRCS BaseTheme.h main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui FormSettings.cpp FormSettings.h FormSettings.ui)
+
+# Add exe here
 if (WIN32)
-    add_executable(CanShark WIN32 main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+    set(APP_ICON_RESOURCE_WINDOWS "resources/appicon.rc")
+
+    add_executable(CanShark WIN32 ${SRCS} ${APP_ICON_RESOURCE_WINDOWS})
 elseif (APPLE)
     # NOTE: Don't include the path in MACOSX_BUNDLE_ICON_FILE -- this is
     # the property added to Info.plist
     set(MACOSX_BUNDLE_ICON_FILE can-shark.icns)
 
     # And this part tells CMake where to find and install the file itself
-    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/images/can-shark.icns BaseTheme.h)
+    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/resources/can-shark.icns)
     set_source_files_properties(${app_ICONS} PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
 
-    add_executable(CanShark MACOSX_BUNDLE ${app_ICONS} main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+    add_executable(CanShark MACOSX_BUNDLE ${app_ICONS} ${SRCS})
 else (UNIX AND NOT APPLE)
-    add_executable(CanShark main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui)
+    add_executable(CanShark ${SRCS})
 endif ()
 
-target_link_libraries(CanShark
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Widgets
-        Qt6::SerialPort
-        libcanshark
-        qhexview-lib
-        )
+target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 
-if (WIN32 AND NOT DEBUG)
+if (WIN32 AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
         set(DEBUG_SUFFIX "d")
@@ -69,12 +62,8 @@ if (WIN32 AND NOT DEBUG)
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
     endforeach (QT_LIB)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
-            "${QT_INSTALL_PATH}/bin/libstdc++-6.dll"
-            "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
-else()
+else ()
     install(TARGETS CanShark RUNTIME DESTINATION bin)
 endif ()

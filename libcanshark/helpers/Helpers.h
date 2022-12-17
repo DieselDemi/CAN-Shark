@@ -11,8 +11,6 @@ namespace dd::libcanshark::helpers {
         {
             for (int i = 0; i < a.size(); i += n)
                 l.push_back(a.mid(i, n));
-
-
             return l;
         }
     };

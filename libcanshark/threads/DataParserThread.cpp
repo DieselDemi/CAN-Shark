@@ -54,7 +54,7 @@ namespace dd::libcanshark::threads {
 
                 std::reverse(packetHexData.begin(), packetHexData.end());
 
-                // Get the statusMessage length
+                // Get the progressMessage length
                 uint32_t messageLength = 0;
                 memcpy(&messageLength, packetHexData.data(), sizeof(uint32_t));
                 messageLength = ntohl(messageLength);

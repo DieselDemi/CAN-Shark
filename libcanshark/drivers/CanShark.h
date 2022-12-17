@@ -3,7 +3,8 @@
 
 #include <QObject>
 #include <QSerialPort>
-#include "../DataParserThread.h"
+#include "../threads/DataParserThread.h"
+#include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
 
@@ -35,7 +36,7 @@ namespace dd::libcanshark::drivers {
         size_t st_max_messages = 0;
         size_t st_recorded_message_count = 0;
 
-        bool b_ready = false;
+        bool m_updateMode = false;
 
     protected slots:
         void readData();
@@ -49,6 +50,8 @@ namespace dd::libcanshark::drivers {
         void errorMessage(QString const &message);
 
         void serialDataReceived(const QString &data);
+
+        void updateComplete(threads::FirmwareUpdateThreadStatus status);
     };
 
 } // drivers

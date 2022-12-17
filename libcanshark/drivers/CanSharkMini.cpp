@@ -1,6 +1,19 @@
 #include "CanSharkMini.h"
 
 #include <QThread>
+#include <QFile>
+#include <Helpers.h>
+
+#include <iostream>
+
+#ifdef _WIN32
+#include "winsock2.h"
+#else
+
+#include <arpa/inet.h>
+
+#endif
+
 
 namespace dd::libcanshark::drivers {
 
@@ -110,89 +123,62 @@ namespace dd::libcanshark::drivers {
      * @return
      */
     bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName) {
-        //        if(port.isOpen()) {
-//            auto file_name =
-//                    QFileDialog::getOpenFileName(
-//                            this,
-//                            tr("Select Update"),
-//                            "/home",
-//                            tr("Update Files (*.csu)"));
-//
-//            QFile input(file_name);
-//
-//            if(!input.open(QFile::OpenModeFlag::ReadOnly))
-//                return;
-//
-//            port.write(QByteArray::fromStdString("u")); //Put in update mode
-//
-//            qint64 update_size = input.size();
-//
-//            port.write(reinterpret_cast<const char *>(&update_size), sizeof(qint64));
-//
-//            port.flush();
-//
-//            //Wait for update mode to kick in
-//            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//
-//            QByteArray file_data = input.readAll();
-//            QList<QByteArray> lines;
-//
-//            split(file_data, lines, 512);
-//
-//            qint64 progress_count = 0;
-//
-//            for(const auto& line : lines) {
-//                qint64 written_count = port.write(line);
-//                port.flush();
-//
-//                progress_count += written_count;
-//
-//                std::cout << "Wrote: " << written_count << " bytes" << std::endl;
-//                std::cout << progress_count << " of " << file_data.size() << std::endl;
-//
-//                port.waitForReadyRead(100);
-//                auto data = port.readAll();
-//
-//                std::cout << "Read: " << data.size() << std::endl;
-//            }
-//
-//            while(!input.atEnd()) {
-//
-//                QByteArray line = input.readLine();
-//                qint64 written_count = port.write(line);
-//
-//                std::cout << line.size() << " == " << written_count << std::endl;
-//                assert(line.size() == written_count);
-//
-//                port.flush();
-//
-//                while(port.bytesToWrite() != 0){
-//                    port.waitForBytesWritten(10);
-//                }
-//
-//                if(!port.waitForBytesWritten(100)) {
-//                    std::cout << "Error writting bytes" << std::endl;
-//                }
-//            }
-//
-//            for(const auto& byte : file_data.toStdString()) {
-//                port.write(reinterpret_cast<const char *>(byte));
-//                port.
-//                auto read_data = port.readAll();
-//
-//                for(const auto& read_byte : read_data) {
-//                    std::cout << std::hex << read_byte << " ";
-//                }
-//                std::cout << std::endl;
-//            }
-//
-//
-//            port.write(file_data);
-//
-//        }
+        if (!this->m_serial->isOpen()) {
+            emit errorMessage(tr("Connect to the CAN Shark Mini first!"));
+            return false;
+        }
+
+        if (ptr_firmwareUpdateThread == nullptr)
+        {
+            ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName, this->m_serial);
+
+            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
+                    &CanSharkMini::updateThreadFinished);
+
+            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
+                    &CanSharkMini::updateThreadProgress);
+
+            ptr_firmwareUpdateThread->start();
+            emit statusMessage("Firmware update started");
+            return true;
+        }
+
+        if (ptr_firmwareUpdateThread->isFinished()) {
+            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
+                    &CanSharkMini::updateThreadFinished);
+
+            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
+                    &CanSharkMini::updateThreadProgress);
+
+            ptr_firmwareUpdateThread->start();
+            emit statusMessage("Firmware update started");
+            return true;
+        }
 
         return false;
     }
 
+    void CanSharkMini::updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString &message) {
+        switch (status) {
+            case threads::FirmwareUpdateThreadStatus::Success: {
+                emit statusMessage(tr("Firmware update complete!"));
+                emit updateComplete(threads::FirmwareUpdateThreadStatus::Success);
+                break;
+            }
+            case threads::FirmwareUpdateThreadStatus::Fail: {
+                emit errorMessage(tr("Error updating firmware!!!: %1").arg(message));
+                emit updateComplete(threads::FirmwareUpdateThreadStatus::Fail);
+                break;
+            }
+        }
 
+        disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
+                   &CanSharkMini::updateThreadFinished);
+        disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
+                &CanSharkMini::updateThreadProgress);
+    }
+
+    void CanSharkMini::updateThreadProgress(const QString &message) {
+        emit statusMessage(message);
+    }
 } // drivers
