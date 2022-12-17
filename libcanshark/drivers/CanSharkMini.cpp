@@ -162,10 +162,12 @@ namespace dd::libcanshark::drivers {
         switch (status) {
             case threads::FirmwareUpdateThreadStatus::Success: {
                 emit statusMessage(tr("Firmware update complete!"));
+                emit updateComplete(threads::FirmwareUpdateThreadStatus::Success);
                 break;
             }
             case threads::FirmwareUpdateThreadStatus::Fail: {
                 emit errorMessage(tr("Error updating firmware!!!: %1").arg(message));
+                emit updateComplete(threads::FirmwareUpdateThreadStatus::Fail);
                 break;
             }
         }

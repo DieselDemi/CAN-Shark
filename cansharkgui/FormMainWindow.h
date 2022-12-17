@@ -50,6 +50,7 @@ namespace dd::forms {
 
         void canSharkMessage(QString const& message);
         void canSharkError(QString const& message);
+        void canSharkUpdateComplete(dd::libcanshark::threads::FirmwareUpdateThreadStatus status);
 
         void parsedDataReady(QList<dd::libcanshark::data::RecordItem>& data);
     };

@@ -11,6 +11,7 @@
 
 namespace dd::libcanshark::drivers {
     class CanSharkMini : public CanShark {
+        Q_OBJECT
     public:
         explicit CanSharkMini(libcanshark::threads::DataParserThread* dataThread,
                               QObject* parent = nullptr);
@@ -27,6 +28,7 @@ namespace dd::libcanshark::drivers {
     private slots:
         void updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString& message);
         void updateThreadProgress(const QString& message);
+
     };
 
 } // drivers

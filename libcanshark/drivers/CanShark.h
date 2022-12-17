@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QSerialPort>
 #include "../threads/DataParserThread.h"
+#include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
 
@@ -49,6 +50,8 @@ namespace dd::libcanshark::drivers {
         void errorMessage(QString const &message);
 
         void serialDataReceived(const QString &data);
+
+        void updateComplete(threads::FirmwareUpdateThreadStatus status);
     };
 
 } // drivers

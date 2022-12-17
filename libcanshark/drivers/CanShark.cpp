@@ -39,13 +39,8 @@ namespace dd::libcanshark::drivers {
         if(response.size() <= 0)
             return;
 
-#ifdef QT_DEBUG
-      std::cout << response.toStdString() << std::endl;
-#endif
-
         if (m_updateMode) {
             return;
-            std::cout << response.toStdString() << std::endl;
         } else {
             if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
                 return;
