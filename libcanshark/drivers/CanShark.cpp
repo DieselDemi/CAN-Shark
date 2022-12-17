@@ -34,20 +34,26 @@ namespace dd::libcanshark::drivers {
      * Called when QSerialPort fires the correct dataAvailable event
      */
     void CanShark::readData() {
-        if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
+        QByteArray response = m_serial->readAll();
+        if(response.size() <= 0)
             return;
 
-        const QByteArray responseData = m_serial->readAll();
+#ifdef QT_DEBUG
+      std::cout << response.toStdString() << std::endl;
+#endif
 
+        if (m_updateMode) {
+            return;
+            std::cout << response.toStdString() << std::endl;
+        } else {
+            if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
+                return;
 
-//        b_ready = std::equal(responseData.begin(), responseData.end(), "READY");
+            emit statusMessage(tr("Received Message of %1bytes").arg(response.size()));
+            emit serialDataReceived(response);
 
-        assert(responseData.size() > 0);
-
-        emit statusMessage(tr("Received Message of %1bytes").arg(responseData.size()));
-        emit serialDataReceived(responseData);
-
-        st_recorded_message_count++;
+            st_recorded_message_count++;
+        }
     }
 
     /**
@@ -66,7 +72,7 @@ namespace dd::libcanshark::drivers {
      * @return List of all the available ports
      */
     QList<std::tuple<QString, QString>> &CanShark::getAvailablePorts() {
-        auto* _ret = new QList<std::tuple<QString, QString>>();
+        auto *_ret = new QList<std::tuple<QString, QString>>();
 
         for (const auto &serial_port: QSerialPortInfo::availablePorts()) {
 #ifdef _DEBUG

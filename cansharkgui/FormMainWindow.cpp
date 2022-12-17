@@ -161,8 +161,13 @@ namespace dd::forms {
      * Called when the user clicks update
      */
     void FormMainWindow::updateClicked() {
-        //TODO Implement this method
-        ptr_driverCanShark->updateFirmware("");
+        auto fileName = QFileDialog::getOpenFileName(this,
+                tr("Open Firmware Update"), "/home/", tr("Firmware Update Files (*.cfu)"));
+
+        if(fileName.isEmpty())
+            return;
+
+        ptr_driverCanShark->updateFirmware(fileName);
     }
 
     /**

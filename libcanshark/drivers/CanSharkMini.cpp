@@ -1,6 +1,10 @@
 #include "CanSharkMini.h"
 
 #include <QThread>
+#include <QFile>
+#include <Helpers.h>
+
+#include <iostream>
 
 namespace dd::libcanshark::drivers {
 
@@ -110,87 +114,72 @@ namespace dd::libcanshark::drivers {
      * @return
      */
     bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName) {
-        //        if(port.isOpen()) {
-//            auto file_name =
-//                    QFileDialog::getOpenFileName(
-//                            this,
-//                            tr("Select Update"),
-//                            "/home",
-//                            tr("Update Files (*.csu)"));
-//
-//            QFile input(file_name);
-//
-//            if(!input.open(QFile::OpenModeFlag::ReadOnly))
-//                return;
-//
-//            port.write(QByteArray::fromStdString("u")); //Put in update mode
-//
-//            qint64 update_size = input.size();
-//
-//            port.write(reinterpret_cast<const char *>(&update_size), sizeof(qint64));
-//
-//            port.flush();
-//
-//            //Wait for update mode to kick in
-//            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//
-//            QByteArray file_data = input.readAll();
-//            QList<QByteArray> lines;
-//
-//            split(file_data, lines, 512);
-//
-//            qint64 progress_count = 0;
-//
-//            for(const auto& line : lines) {
-//                qint64 written_count = port.write(line);
-//                port.flush();
-//
-//                progress_count += written_count;
-//
-//                std::cout << "Wrote: " << written_count << " bytes" << std::endl;
-//                std::cout << progress_count << " of " << file_data.size() << std::endl;
-//
-//                port.waitForReadyRead(100);
-//                auto data = port.readAll();
-//
-//                std::cout << "Read: " << data.size() << std::endl;
-//            }
-//
-//            while(!input.atEnd()) {
-//
-//                QByteArray line = input.readLine();
-//                qint64 written_count = port.write(line);
-//
-//                std::cout << line.size() << " == " << written_count << std::endl;
-//                assert(line.size() == written_count);
-//
-//                port.flush();
-//
-//                while(port.bytesToWrite() != 0){
-//                    port.waitForBytesWritten(10);
-//                }
-//
-//                if(!port.waitForBytesWritten(100)) {
-//                    std::cout << "Error writting bytes" << std::endl;
-//                }
-//            }
-//
-//            for(const auto& byte : file_data.toStdString()) {
-//                port.write(reinterpret_cast<const char *>(byte));
-//                port.
-//                auto read_data = port.readAll();
-//
-//                for(const auto& read_byte : read_data) {
-//                    std::cout << std::hex << read_byte << " ";
-//                }
-//                std::cout << std::endl;
-//            }
-//
-//
-//            port.write(file_data);
-//
-//        }
+        if(this->m_serial->isOpen()) {
+            disconnect(m_serial, &QSerialPort::readyRead, this, &CanSharkMini::readData);
 
+            this->m_updateMode = true;
+
+            QFile firmwareUpdateFile(firmwareUpdateFileName);
+
+            //Open the firmware update file
+            if(!firmwareUpdateFile.open(QFile::OpenModeFlag::ReadOnly))
+                return false;
+
+            //Send the canshark mini the update byte
+            this->m_serial->write("u"); //Put in update mode
+
+            //Get the update size
+            size_t update_size = htonl(firmwareUpdateFile.size());
+
+            //Write to the can shark mini the size of the update
+            this->m_serial->write(reinterpret_cast<const char *>(&update_size), sizeof(size_t));
+
+            this->m_serial->flush();
+
+            //Wait for update mode to kick in
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            QByteArray file_data = firmwareUpdateFile.readAll();
+            QList<QByteArray> lines;
+
+            helpers::Helpers::split(file_data, lines, 512);
+
+            size_t progress_count = 0;
+
+            for(const auto& line : lines) {
+                size_t written_count = this->m_serial->write(line);
+                this->m_serial->waitForBytesWritten(1000);
+
+                this->m_serial->flush();
+
+                progress_count += written_count;
+
+                emit statusMessage(tr("Wrote: %1 [%2 of %3]")
+                    .arg(written_count)
+                    .arg(progress_count)
+                    .arg(file_data.size()));
+
+                std::cout << "Wrote: " << written_count << "bytes [" << progress_count << " of " << file_data.size() << "]" << std::endl;
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+                //Wait till we recieve a response from the CSM
+//                QByteArray response = this->m_serial->readAll();
+//                while(response.size() == 0) {
+//                    response = this->m_serial->readAll();
+//                    if(response.size() != 0)
+//                        std::cout << "CSM Responded: " << response.toStdString() << std::endl;
+//                }
+            }
+
+            emit statusMessage("Update complete");
+            this->m_updateMode = false;
+
+            connect(m_serial, &QSerialPort::readyRead, this, &CanSharkMini::readData);
+
+            return true;
+        }
+        emit errorMessage(tr("Must be connected to device first!"));
         return false;
     }
 

@@ -35,7 +35,7 @@ namespace dd::libcanshark::drivers {
         size_t st_max_messages = 0;
         size_t st_recorded_message_count = 0;
 
-        bool b_ready = false;
+        bool m_updateMode = false;
 
     protected slots:
         void readData();
