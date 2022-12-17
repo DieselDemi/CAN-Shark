@@ -14,14 +14,16 @@ include_directories(../QHexView)
 set(SRCS BaseTheme.h main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui FormSettings.cpp FormSettings.h FormSettings.ui)
 
 if (WIN32)
-    add_executable(CanShark WIN32 ${SRCS})
+    set(APP_ICON_RESOURCE_WINDOWS "resources/appicon.rc")
+
+    add_executable(CanShark WIN32 ${SRCS} ${APP_ICON_RESOURCE_WINDOWS})
 elseif (APPLE)
     # NOTE: Don't include the path in MACOSX_BUNDLE_ICON_FILE -- this is
     # the property added to Info.plist
     set(MACOSX_BUNDLE_ICON_FILE can-shark.icns)
 
     # And this part tells CMake where to find and install the file itself
-    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/images/can-shark.icns )
+    set(app_ICONS ${CMAKE_CURRENT_SOURCE_DIR}/resources/can-shark.icns)
     set_source_files_properties(${app_ICONS} PROPERTIES
             MACOSX_PACKAGE_LOCATION "Resources")
 
