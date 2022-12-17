@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QSerialPort>
-#include "../DataParserThread.h"
+#include "../threads/DataParserThread.h"
 
 namespace dd::libcanshark::drivers {
 

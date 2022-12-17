@@ -2,6 +2,7 @@
 #include <QSerialPortInfo>
 #include <QMap>
 #include <iostream>
+#include <DataParserThread.h>
 
 namespace dd::libcanshark::drivers {
 
@@ -84,7 +85,7 @@ namespace dd::libcanshark::drivers {
 #endif
             //TODO: Find the name on linux distros, below is windows and mac
             // Also differentiate between canshark versions
-            if (serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) {
+            if ((serial_port.serialNumber() == "CANSHARKMINI" || serial_port.portName().contains("cu.SLAB_USBtoUART")) && !serial_port.portName().contains("CANSHARKMINI")) {
                 QString name = tr("%1 %2")
                         .arg("CAN Shark Mini on", serial_port.portName());
 

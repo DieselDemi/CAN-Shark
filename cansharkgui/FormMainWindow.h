@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
 #include "RecordTableModel.h"
-#include "DataParserThread.h"
+#include "threads/DataParserThread.h"
 #include "drivers/CanSharkDrivers.h"
 #include "FormSettings.h"
 

@@ -3,7 +3,7 @@
 
 #include <QThread>
 #include <QMutex>
-#include "RecordItem.h"
+#include "../RecordItem.h"
 
 namespace dd::libcanshark::threads {
     class DataParserThread : public QThread {

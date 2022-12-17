@@ -12,13 +12,16 @@ find_package(Qt6 COMPONENTS
         SerialPort
         REQUIRED)
 
-include_directories(drivers)
+include_directories(threads)
 include_directories(helpers)
+include_directories(drivers)
 
 set(SRCS
-        DataParserThread.cpp
-        DataParserThread.h
         RecordItem.h
+        threads/DataParserThread.cpp
+        threads/DataParserThread.h
+        threads/FirmwareUpdateThread.cpp
+        threads/FirmwareUpdateThread.h
         drivers/CanSharkMini.cpp
         drivers/CanSharkMini.h
         helpers/Helpers.cpp
@@ -27,8 +30,7 @@ set(SRCS
         drivers/CanSharkPro.h
         drivers/CanShark.cpp
         drivers/CanShark.h
-        drivers/CanSharkDrivers.h
-)
+        drivers/CanSharkDrivers.h)
 
 add_library(libcanshark STATIC ${SRCS})
 

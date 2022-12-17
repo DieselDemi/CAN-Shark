@@ -91,7 +91,7 @@ namespace dd::forms {
     }
 
     /**
-     * Sets the status statusMessage on the bottom of the UI
+     * Sets the status progressMessage on the bottom of the UI
      * @param message
      */
     void FormMainWindow::setStatusMessage(const QString &message, QColor color) {
