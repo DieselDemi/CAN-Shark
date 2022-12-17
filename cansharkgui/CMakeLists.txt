@@ -13,6 +13,7 @@ include_directories(../QHexView)
 
 set(SRCS BaseTheme.h main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow.ui RecordTableModel.cpp RecordTableModel.h FormInspect.cpp FormInspect.h FormInspect.ui FormSettings.cpp FormSettings.h FormSettings.ui)
 
+# Add exe here
 if (WIN32)
     add_executable(CanShark WIN32 ${SRCS})
 elseif (APPLE)
