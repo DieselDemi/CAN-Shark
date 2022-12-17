@@ -6,6 +6,10 @@
 
 #include <iostream>
 
+#ifdef _WIN32
+#include "winsock2.h"
+#endif
+
 namespace dd::libcanshark::drivers {
 
     CanSharkMini::CanSharkMini(
