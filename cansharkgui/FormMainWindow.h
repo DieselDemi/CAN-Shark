@@ -17,20 +17,22 @@ namespace dd::forms {
     Q_OBJECT
 
     public:
-        explicit FormMainWindow(QWidget *parent = nullptr);
+        explicit FormMainWindow(QApplication* app, QWidget *parent = nullptr);
 
         ~FormMainWindow() override;
 
     private:
+        QApplication* ptr_mainApplication = nullptr;
+
         Ui::FormMainWindow *ui;
 
-        dd::libcanshark::threads::DataParserThread* m_dataThread = nullptr;
+        dd::libcanshark::threads::DataParserThread* ptr_dataThread = nullptr;
 
-        dd::libcanshark::drivers::CanShark* m_canShark = nullptr;
+        dd::libcanshark::drivers::CanShark* ptr_driverCanShark = nullptr;
 
         std::unique_ptr<models::RecordTableModel> m_recordTableModelPtr;
 
-        FormSettings* m_formSettings = nullptr;
+        FormSettings* ptr_formSettings = nullptr;
 
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 
