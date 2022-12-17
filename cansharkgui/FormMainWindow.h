@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
 #include "RecordTableModel.h"
-#include "DataParserThread.h"
+#include "threads/DataParserThread.h"
 #include "drivers/CanSharkDrivers.h"
 #include "FormSettings.h"
 
@@ -50,6 +50,7 @@ namespace dd::forms {
 
         void canSharkMessage(QString const& message);
         void canSharkError(QString const& message);
+        void canSharkUpdateComplete(dd::libcanshark::threads::FirmwareUpdateThreadStatus status);
 
         void parsedDataReady(QList<dd::libcanshark::data::RecordItem>& data);
     };

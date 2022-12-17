@@ -72,6 +72,9 @@ namespace dd::forms {
         connect(ptr_driverCanShark, &dd::libcanshark::drivers::CanShark::errorMessage,
                 this, &FormMainWindow::canSharkError);
 
+        connect(ptr_driverCanShark, &dd::libcanshark::drivers::CanShark::updateComplete,
+                this, &FormMainWindow::canSharkUpdateComplete);
+
         for (const auto &port: ptr_driverCanShark->getAvailablePorts()) {
             this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
@@ -91,7 +94,7 @@ namespace dd::forms {
     }
 
     /**
-     * Sets the status statusMessage on the bottom of the UI
+     * Sets the status progressMessage on the bottom of the UI
      * @param message
      */
     void FormMainWindow::setStatusMessage(const QString &message, QColor color) {
@@ -168,6 +171,7 @@ namespace dd::forms {
             return;
 
         ptr_driverCanShark->updateFirmware(fileName);
+        this->setEnabled(false);
     }
 
     /**
@@ -212,6 +216,18 @@ namespace dd::forms {
         } else {
             this->ptr_formSettings->show();
         }
+    }
+
+    void FormMainWindow::canSharkUpdateComplete(dd::libcanshark::threads::FirmwareUpdateThreadStatus status) {
+        switch(status) {
+            case libcanshark::threads::FirmwareUpdateThreadStatus::Success:
+                QMessageBox::information(this, tr("Update Complete"), tr("Firmware has been updated successfully"));
+                break;
+            case libcanshark::threads::FirmwareUpdateThreadStatus::Fail:
+                QMessageBox::critical(this, tr("Firmware Update has Failed"), tr("Something went wrong with the firmware update!"));
+                break;
+        }
+        this->setEnabled(true);
     }
 
 } // dd::forms
