@@ -7,6 +7,12 @@
 #include <QFile>
 #include <utility>
 
+#ifdef _WIN32
+#include "winsock2.h"
+#else
+#include <arpa/inet.h>
+#endif
+
 namespace dd::libcanshark::threads {
     FirmwareUpdateThread::FirmwareUpdateThread(QString fileName, QSerialPort *serialPort)
         : m_fileName(std::move(fileName)), m_serial(serialPort)
