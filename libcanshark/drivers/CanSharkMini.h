@@ -17,7 +17,7 @@ namespace dd::libcanshark::drivers {
 
         bool startRecording(size_t max_messages) override;
         bool stopRecording() override;
-        bool updateFirmware(QString const& firmwareUpdateFileName) override;
+        bool updateFirmware(QString const& firmwareUpdateFileName, const QString& selectedDevicePortName) override;
 
     private:
         threads::FirmwareUpdateThread* ptr_firmwareUpdateThread = nullptr;

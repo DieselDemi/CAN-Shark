@@ -9,7 +9,7 @@ namespace dd::libcanshark::drivers {
         return false;
     }
 
-    bool CanSharkPro::updateFirmware(const QString &firmwareUpdateFileName) {
+    bool CanSharkPro::updateFirmware(const QString &firmwareUpdateFileName, const QString& selectedDevicePortName) {
         return false;
     }
 } // drivers

@@ -10,7 +10,7 @@ namespace dd::libcanshark::drivers {
 
         bool stopRecording() override;
 
-        bool updateFirmware(const QString &firmwareUpdateFileName) override;
+        bool updateFirmware(const QString &firmwareUpdateFileName, const QString& selectedDevicePortName) override;
     };
 
 } // drivers
