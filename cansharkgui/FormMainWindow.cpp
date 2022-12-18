@@ -1,24 +1,21 @@
 #include "FormMainWindow.h"
 #include "ui_FormMainWindow.h"
 
-#include <sstream>
-#include <iostream>
 #include <QFileDialog>
 #include <QSerialPortInfo>
 
 #include <thread>
 #include <QMessageBox>
 #include "RecordTableModel.h"
+#include "FormSettings.h"
 
 namespace dd::forms {
     /**
      * Basic constructor
      * @param parent
      */
-    FormMainWindow::FormMainWindow(QWidget *parent) :
-            QWidget(parent),
-            ui(new Ui::FormMainWindow),
-            m_dataThread(new libcanshark::threads::DataParserThread(this)) {
+    FormMainWindow::FormMainWindow(QApplication *app, QWidget *parent) :
+            QWidget(parent), ui(new Ui::FormMainWindow), ptr_mainApplication(app) {
 
         ui->setupUi(this);
 
@@ -41,34 +38,37 @@ namespace dd::forms {
         connect(ui->saveCaptureButton, &QPushButton::released,
                 this, &FormMainWindow::saveRecordedDataClicked);
 
-        connect(ui->defaultRadioButton, &QRadioButton::clicked, this, &FormMainWindow::defaultRadioButtonClicked);
-        connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this, &FormMainWindow::onlyShowUniqueRadioButtonClicked);
+        connect(ui->settingsButton, &QPushButton::released,
+                this, &FormMainWindow::settingsButtonClicked);
 
-        //Connect the data thread data ready signal
-        connect(m_dataThread, &dd::libcanshark::threads::DataParserThread::dataReady,
-                this, &FormMainWindow::parsedDataReady);
+        connect(ui->defaultRadioButton, &QRadioButton::clicked, this, &FormMainWindow::defaultRadioButtonClicked);
+        connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this,
+                &FormMainWindow::onlyShowUniqueRadioButtonClicked);
 
         this->ui->disconnectButton->setEnabled(false);
         this->ui->stopButton->setEnabled(false);
 
         this->ui->defaultRadioButton->setChecked(true);
 
-        m_recordTableModelPtr = std::make_unique<models::RecordTableModel>(ui->recordTable);
-        this->ui->recordTable->setModel((QAbstractTableModel *) m_recordTableModelPtr.get());
+        m_recordTableModelPtr = new models::RecordTableModel(ui->recordTable);
+        this->ui->recordTable->setModel((QAbstractTableModel *) m_recordTableModelPtr);
 
 
         // Create a CanShark object
         // TODO: Create the driver based on which device is connected
-        m_canShark = new libcanshark::drivers::CanSharkMini(m_dataThread, this);
+        m_driverCanShark = new libcanshark::drivers::CanSharkMini();
 
-        assert(m_canShark != nullptr);
+        assert(m_driverCanShark != nullptr);
 
-        connect(m_canShark, &dd::libcanshark::drivers::CanShark::statusMessage,
+        connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::statusMessage,
                 this, &FormMainWindow::canSharkMessage);
-        connect(m_canShark, &dd::libcanshark::drivers::CanShark::errorMessage,
+        connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::errorMessage,
                 this, &FormMainWindow::canSharkError);
 
-        for(const auto& port : m_canShark->getAvailablePorts()) {
+        connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::updateComplete,
+                this, &FormMainWindow::canSharkUpdateComplete);
+
+        for (const auto &port: m_driverCanShark->getAvailablePorts()) {
             this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
     }
@@ -77,17 +77,11 @@ namespace dd::forms {
      * Basic destructor
      */
     FormMainWindow::~FormMainWindow() {
-        assert(m_dataThread != nullptr);
-        delete m_canShark;
-
-        if(m_dataThread->isRunning())
-            m_dataThread->stop();
-
         delete ui;
     }
 
     /**
-     * Sets the status statusMessage on the bottom of the UI
+     * Sets the status progressMessage on the bottom of the UI
      * @param message
      */
     void FormMainWindow::setStatusMessage(const QString &message, QColor color) {
@@ -103,36 +97,46 @@ namespace dd::forms {
      * Called when the user clicks connect
      */
     void FormMainWindow::connectClicked() {
-        assert(m_canShark != nullptr);
+        assert(m_driverCanShark != nullptr);
 
 #ifdef WIN32
-        if(!m_canShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+        if(!m_driverCanShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
             QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on %1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
 #else
-        if(!m_canShark->openConnection(tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
-            QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on /dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
+        if (!m_driverCanShark->openConnection(
+                tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+            QMessageBox::critical(this, tr("Could not connect!"),
+                                  tr("Could not connect to canshark mini on /dev/%1").arg(
+                                          this->ui->deviceSelectionComboBox->currentData().toString()));
 #endif
 
         this->ui->connectButton->setEnabled(false);
         this->ui->disconnectButton->setEnabled(true);
+
+        //Connect the data thread data ready signal
+        connect(this->m_driverCanShark->getDataParserThread(), &dd::libcanshark::threads::DataParserThread::dataReady,
+                this, &FormMainWindow::parsedDataReady);
     }
 
     /**
      * Called when the user clicks disconnect
      */
     void FormMainWindow::disconnectClicked() {
-        if(!m_canShark->closeConnection())
+        if (!m_driverCanShark->closeConnection())
             QMessageBox::critical(this, tr("Could not disconnect!"), tr("Could not disconnect from target!"));
 
         this->ui->connectButton->setEnabled(true);
         this->ui->disconnectButton->setEnabled(false);
+
+        disconnect(this->m_driverCanShark->getDataParserThread(), &dd::libcanshark::threads::DataParserThread::dataReady,
+                this, &FormMainWindow::parsedDataReady);
     }
 
     /**
      * Called when the users clicks start recording
      */
     void FormMainWindow::startClicked() {
-        if(!m_canShark->startRecording(0))
+        if (!m_driverCanShark->startRecording(0))
             return;
 
         this->ui->startButton->setEnabled(false);
@@ -143,7 +147,7 @@ namespace dd::forms {
      * Called when the user clicks stop recording
      */
     void FormMainWindow::stopClicked() {
-        if(!m_canShark->stopRecording())
+        if (!m_driverCanShark->stopRecording())
             return;
 
         this->ui->startButton->setEnabled(true);
@@ -154,8 +158,14 @@ namespace dd::forms {
      * Called when the user clicks update
      */
     void FormMainWindow::updateClicked() {
-        //TODO Implement this method
-        m_canShark->updateFirmware("");
+        auto fileName = QFileDialog::getOpenFileName(this,
+                tr("Open Firmware Update"), "/home/", tr("Firmware Update Files (*.cfu)"));
+
+        if(fileName.isEmpty())
+            return;
+
+        if(m_driverCanShark->updateFirmware(fileName))
+            this->setEnabled(false);
     }
 
     /**
@@ -170,6 +180,9 @@ namespace dd::forms {
      * @param data
      */
     void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem> &data) {
+        if(data.empty())
+            return;
+
         for (auto &row: data) {
             m_recordTableModelPtr->addRow(row);
         }
@@ -189,6 +202,29 @@ namespace dd::forms {
 
     void FormMainWindow::onlyShowUniqueRadioButtonClicked(bool checked) {
         this->ui->defaultRadioButton->setChecked(!checked);
+    }
+
+    void FormMainWindow::settingsButtonClicked() {
+        if (m_formSettings == nullptr) {
+            assert(this->ptr_mainApplication != nullptr);
+            assert(this->m_driverCanShark != nullptr);
+            this->m_formSettings = new FormSettings(this->ptr_mainApplication, this->m_driverCanShark);
+            this->m_formSettings->show();
+        } else {
+            this->m_formSettings->show();
+        }
+    }
+
+    void FormMainWindow::canSharkUpdateComplete(dd::libcanshark::threads::FirmwareUpdateThreadStatus status) {
+        switch(status) {
+            case libcanshark::threads::FirmwareUpdateThreadStatus::Success:
+                QMessageBox::information(this, tr("Update Complete"), tr("Firmware has been updated successfully"));
+                break;
+            case libcanshark::threads::FirmwareUpdateThreadStatus::Fail:
+                QMessageBox::critical(this, tr("Firmware Update has Failed"), tr("Something went wrong with the firmware update!"));
+                break;
+        }
+        this->setEnabled(true);
     }
 
 } // dd::forms

@@ -1,9 +1,7 @@
-#include <QTimer>
 #include <sstream>
 #include <QPushButton>
 #include <QSignalMapper>
 #include <QTableView>
-#include <iostream>
 #include "RecordTableModel.h"
 #include "FormInspect.h"
 

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "DataParserThread.h"
+#include "Helpers.h"
 
 #define SIZE_THRESHOLD 100
 
@@ -11,8 +12,7 @@
 
 namespace dd::libcanshark::threads {
 
-    DataParserThread::DataParserThread(QObject *parent)
-        : QThread(parent)
+    DataParserThread::DataParserThread(QObject *parent) : QThread(parent)
     {
         // Register a meta type ???
         typedef QList<dd::libcanshark::data::RecordItem> recordItem;
@@ -47,14 +47,14 @@ namespace dd::libcanshark::threads {
 //                continue;
 
             for (auto &packet: packetHexStrings) {
-                auto packetHexData = hex2bytes<uint8_t>(packet.toStdString());
+                auto packetHexData = helpers::Helpers::hex2bytes<uint8_t>(packet.toStdString());
 
                 if(packetHexData.empty())
                     continue;
 
                 std::reverse(packetHexData.begin(), packetHexData.end());
 
-                // Get the statusMessage length
+                // Get the progressMessage length
                 uint32_t messageLength = 0;
                 memcpy(&messageLength, packetHexData.data(), sizeof(uint32_t));
                 messageLength = ntohl(messageLength);
@@ -75,26 +75,12 @@ namespace dd::libcanshark::threads {
                 id = ntohl(id);
 
                 size_t canDataLength = messageLength - (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t));
-                uint8_t canData[canDataLength];
-                memcpy(&canData, packetHexData.data() + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t), canDataLength);
+                auto* canData = (uint8_t*)malloc(sizeof(uint8_t) * canDataLength);
+                memcpy(canData, packetHexData.data() + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t), canDataLength);
 
                 uint16_t crc16 = 0;
                 memcpy(&crc16, packetHexData.data() + sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t) + canDataLength, sizeof(uint16_t));
                 crc16 = ntohs(crc16);
-
-#ifdef _DEBUG
-                for(const auto& byte : packetHexData) {
-                    printf("%02x ", byte);
-                }
-
-                std::cout << std::endl
-                          << "Len: " << messageLength
-                          << " Delta us Time: " << usDeltaTime
-                          << " Type: " << static_cast<dd::libcanshark::recordItem::CanFrameType>(type)
-                          << " ID: " << id
-                          << " Can Data Length: " << canDataLength
-                          << " CRC16: " << crc16 << std::endl;
-#endif
 
                 //1. Convert hex string to a record item
                 dd::libcanshark::data::RecordItem recordItem = {
@@ -107,7 +93,9 @@ namespace dd::libcanshark::threads {
 
                 recordItem.canDataLength = canDataLength;
                 recordItem.data = (uint8_t*)malloc(sizeof(uint8_t) * canDataLength);
-                memcpy(recordItem.data, &canData, canDataLength);
+                memcpy(recordItem.data, canData, canDataLength);
+
+                free(canData);
 
                 //Remove the hex string from the list
                 packetHexStrings.removeIf([&packet](const QString& t)->bool {
@@ -143,9 +131,5 @@ namespace dd::libcanshark::threads {
                 packetHexString.append(c);
             }
         }
-    }
-
-    void DataParserThread::stop() {
-        this->running = false;
     }
 } // threads

@@ -3,7 +3,8 @@
 
 #include <QObject>
 #include <QSerialPort>
-#include "../DataParserThread.h"
+#include "../threads/DataParserThread.h"
+#include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
 
@@ -11,13 +12,13 @@ namespace dd::libcanshark::drivers {
     Q_OBJECT
 
     public:
-        explicit CanShark(libcanshark::threads::DataParserThread* dataThread, QObject *parent = nullptr);
+        explicit CanShark(QObject *parent = nullptr);
 
         ~CanShark() override;
 
-        virtual bool openConnection(QString const &portName) = 0;
+        bool openConnection(QString const &portName);
 
-        virtual bool closeConnection() = 0;
+        bool closeConnection();
 
         virtual bool startRecording(size_t max_messages) = 0;
 
@@ -25,7 +26,9 @@ namespace dd::libcanshark::drivers {
 
         virtual bool updateFirmware(QString const &firmwareUpdateFileName) = 0;
 
-        QList<std::tuple<QString, QString>>& getAvailablePorts();
+        QList<std::tuple<QString, QString>> getAvailablePorts();
+
+        threads::DataParserThread* getDataParserThread();
 
     protected:
         libcanshark::threads::DataParserThread *m_dataThread = nullptr;
@@ -35,7 +38,7 @@ namespace dd::libcanshark::drivers {
         size_t st_max_messages = 0;
         size_t st_recorded_message_count = 0;
 
-        bool b_ready = false;
+        bool m_updateMode = false;
 
     protected slots:
         void readData();
@@ -49,6 +52,8 @@ namespace dd::libcanshark::drivers {
         void errorMessage(QString const &message);
 
         void serialDataReceived(const QString &data);
+
+        void updateComplete(threads::FirmwareUpdateThreadStatus status);
     };
 
 } // drivers

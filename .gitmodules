@@ -1,4 +1,3 @@
-ad
 [submodule "QHexView"]
 	path = QHexView
 	url = https://github.com/DemiRom/QHexView.git
