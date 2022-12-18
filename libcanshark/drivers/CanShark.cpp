@@ -33,10 +33,7 @@ namespace dd::libcanshark::drivers {
      */
     void CanShark::readData() {
         QByteArray response = m_serial->readAll();
-        if (response.size() <= 0)
-            return;
-
-        if (m_updateMode) {
+        if (response.size() <= 0) {
             return;
         } else {
             if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
@@ -122,6 +119,8 @@ namespace dd::libcanshark::drivers {
             m_serial->setRequestToSend(m_serial->isRequestToSend());
             QThread::msleep(20);
             m_serial->setRequestToSend(false);
+
+            m_serialPortName = portName;
 
             return true;
         } else {

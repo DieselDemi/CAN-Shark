@@ -29,9 +29,12 @@ namespace dd::forms {
         models::RecordTableModel* m_recordTableModelPtr = nullptr;
         FormSettings* m_formSettings = nullptr;
 
+        QString m_selectedDevicePortName;
+
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 
     private slots:
+        void deviceSelectionChanged(int index);
         void connectClicked();
         void disconnectClicked();
         void startClicked();

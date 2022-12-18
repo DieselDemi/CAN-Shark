@@ -49,14 +49,15 @@ namespace dd::libcanshark::drivers {
      * @param firmwareUpdateFileName
      * @return
      */
-    bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName) {
-        if (!this->m_serial->isOpen()) {
-            emit errorMessage(tr("Connect to the CAN Shark Mini first!"));
-            return false;
+    bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName, const QString& selectedDevicePortName) {
+        if (this->m_serial->isOpen()) {
+            this->m_serial->close();
         }
 
+        this->m_serialPortName = selectedDevicePortName;
+
         if (ptr_firmwareUpdateThread == nullptr) {
-            ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName, this->m_serial);
+            ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName, selectedDevicePortName);
             startFirmwareUpdate();
             return true;
         } else if (ptr_firmwareUpdateThread->isFinished()) {
@@ -111,6 +112,7 @@ namespace dd::libcanshark::drivers {
                 &CanSharkMini::updateThreadProgress);
 
         ptr_firmwareUpdateThread->start();
+
         emit statusMessage("Firmware update started");
     }
 } // drivers

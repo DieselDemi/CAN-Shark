@@ -24,7 +24,7 @@ namespace dd::libcanshark::drivers {
 
         virtual bool stopRecording() = 0;
 
-        virtual bool updateFirmware(QString const &firmwareUpdateFileName) = 0;
+        virtual bool updateFirmware(QString const &firmwareUpdateFileName, const QString& selectedDevicePortName) = 0;
 
         QList<std::tuple<QString, QString>> getAvailablePorts();
 
@@ -38,7 +38,7 @@ namespace dd::libcanshark::drivers {
         size_t st_max_messages = 0;
         size_t st_recorded_message_count = 0;
 
-        bool m_updateMode = false;
+        QString m_serialPortName;
 
     protected slots:
         void readData();
