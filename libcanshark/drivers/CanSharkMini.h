@@ -22,6 +22,8 @@ namespace dd::libcanshark::drivers {
     private:
         threads::FirmwareUpdateThread* ptr_firmwareUpdateThread = nullptr;
 
+        void startFirmwareUpdate();
+
     private slots:
         void updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString& message);
         void updateThreadProgress(const QString& message);

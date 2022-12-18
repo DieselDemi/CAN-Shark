@@ -8,7 +8,7 @@
 
 namespace dd::libcanshark::drivers {
 
-    CanSharkMini::CanSharkMini(QObject *parent) : CanShark(parent) { }
+    CanSharkMini::CanSharkMini(QObject *parent) : CanShark(parent) {}
 
     /**
      * Sends the start recording command to the CANShark Mini
@@ -55,30 +55,12 @@ namespace dd::libcanshark::drivers {
             return false;
         }
 
-        if (ptr_firmwareUpdateThread == nullptr)
-        {
+        if (ptr_firmwareUpdateThread == nullptr) {
             ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName, this->m_serial);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
-                    &CanSharkMini::updateThreadFinished);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                    &CanSharkMini::updateThreadProgress);
-
-            ptr_firmwareUpdateThread->start();
-            emit statusMessage("Firmware update started");
+            startFirmwareUpdate();
             return true;
-        }
-
-        if (ptr_firmwareUpdateThread->isFinished()) {
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
-                    &CanSharkMini::updateThreadFinished);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                    &CanSharkMini::updateThreadProgress);
-
-            ptr_firmwareUpdateThread->start();
-            emit statusMessage("Firmware update started");
+        } else if (ptr_firmwareUpdateThread->isFinished()) {
+            startFirmwareUpdate();
             return true;
         }
 
@@ -107,7 +89,7 @@ namespace dd::libcanshark::drivers {
         disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
                    &CanSharkMini::updateThreadFinished);
         disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                &CanSharkMini::updateThreadProgress);
+                   &CanSharkMini::updateThreadProgress);
     }
 
     /**
@@ -116,5 +98,19 @@ namespace dd::libcanshark::drivers {
      */
     void CanSharkMini::updateThreadProgress(const QString &message) {
         emit statusMessage(message);
+    }
+
+    /**
+     * Wrapper function for the firmware update
+     */
+    void CanSharkMini::startFirmwareUpdate() {
+        connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
+                &CanSharkMini::updateThreadFinished);
+
+        connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
+                &CanSharkMini::updateThreadProgress);
+
+        ptr_firmwareUpdateThread->start();
+        emit statusMessage("Firmware update started");
     }
 } // drivers
