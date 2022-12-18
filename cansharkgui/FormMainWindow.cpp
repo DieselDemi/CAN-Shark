@@ -77,8 +77,6 @@ namespace dd::forms {
      * Basic destructor
      */
     FormMainWindow::~FormMainWindow() {
-        assert(ptr_dataThread != nullptr);
-
         delete ui;
     }
 
@@ -99,7 +97,7 @@ namespace dd::forms {
      * Called when the user clicks connect
      */
     void FormMainWindow::connectClicked() {
-        assert(ptr_driverCanShark != nullptr);
+        assert(m_driverCanShark != nullptr);
 
 #ifdef WIN32
         if(!m_driverCanShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
