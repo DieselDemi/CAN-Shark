@@ -13,7 +13,7 @@ namespace dd::libcanshark::threads {
     class FirmwareUpdateThread : public QThread {
         Q_OBJECT
     public:
-        FirmwareUpdateThread(QString  fileName, QSerialPort* serialPort);
+        FirmwareUpdateThread(QString fileName, QSerialPort* serialPort);
 
     private:
         QString m_fileName;

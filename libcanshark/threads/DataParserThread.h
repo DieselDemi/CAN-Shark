@@ -15,7 +15,8 @@ namespace dd::libcanshark::threads {
 
         void init();
 
-        void stop();
+        void startRecording(const QString& serialPort);
+        void stopRecording();
 
     protected:
         void run() Q_DECL_OVERRIDE;
@@ -28,28 +29,6 @@ namespace dd::libcanshark::threads {
         QString packetHexString;
         QList<QString> packetHexStrings;
         QList<data::RecordItem> packets;
-
-        template<typename T>
-        std::vector<T> hex2bytes(const std::string& s)
-        {
-            constexpr size_t width = sizeof(T) * 2;
-            std::vector<T> v;
-            v.reserve((s.size() + width - 1) / width);
-            for (auto it = s.crbegin(); it < s.crend(); it += width)
-            {
-                try {
-                    auto begin = std::min(s.crend(), it + width).base();
-                    auto end = it.base();
-                    std::string slice(begin, end);
-                    T value = std::stoul(slice, 0, 16);
-                    v.push_back(value);
-                } catch(std::exception& e) {
-                    return {};
-                }
-            }
-            return v;
-        }
-
 
     public slots:
         void serialDataReceived(const QString& data);

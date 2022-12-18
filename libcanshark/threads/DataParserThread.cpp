@@ -1,5 +1,6 @@
 #include <iostream>
 #include "DataParserThread.h"
+#include "Helpers.h"
 
 #define SIZE_THRESHOLD 100
 
@@ -11,8 +12,7 @@
 
 namespace dd::libcanshark::threads {
 
-    DataParserThread::DataParserThread(QObject *parent)
-        : QThread(parent)
+    DataParserThread::DataParserThread(QObject *parent) : QThread(parent)
     {
         // Register a meta type ???
         typedef QList<dd::libcanshark::data::RecordItem> recordItem;
@@ -47,7 +47,7 @@ namespace dd::libcanshark::threads {
 //                continue;
 
             for (auto &packet: packetHexStrings) {
-                auto packetHexData = hex2bytes<uint8_t>(packet.toStdString());
+                auto packetHexData = helpers::Helpers::hex2bytes<uint8_t>(packet.toStdString());
 
                 if(packetHexData.empty())
                     continue;
@@ -131,9 +131,5 @@ namespace dd::libcanshark::threads {
                 packetHexString.append(c);
             }
         }
-    }
-
-    void DataParserThread::stop() {
-        this->running = false;
     }
 } // threads

@@ -6,10 +6,6 @@
 namespace dd::libcanshark::drivers {
     class CanSharkPro : public CanShark{
     public:
-        bool openConnection(const QString &portName) override;
-
-        bool closeConnection() override;
-
         bool startRecording(size_t max_messages) override;
 
         bool stopRecording() override;
