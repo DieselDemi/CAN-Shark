@@ -22,6 +22,7 @@ namespace dd::libcanshark::threads {
      * The thread loop
      */
     void FirmwareUpdateThread::run() {
+        mutex.lock();
         if(m_serial == nullptr)
             m_serial = new QSerialPort();
 
@@ -31,6 +32,7 @@ namespace dd::libcanshark::threads {
         if(!m_serial->isOpen())
             if(!m_serial->open(QIODevice::ReadWrite)){
                 emit finished(FirmwareUpdateThreadStatus::Fail, tr("Could not open serial port!"));
+                mutex.unlock();
                 return;
             }
 
@@ -42,6 +44,7 @@ namespace dd::libcanshark::threads {
         if(!firmwareUpdateFile.open(QFile::OpenModeFlag::ReadOnly))
         {
             emit finished(FirmwareUpdateThreadStatus::Fail, tr("Could not open firmware update file!"));
+            mutex.unlock();
             return;
         }
 
@@ -83,6 +86,8 @@ namespace dd::libcanshark::threads {
         }
 
         closeConnection();
+        mutex.unlock();
+
         emit finished(FirmwareUpdateThreadStatus::Success, tr("Update complete!"));
     }
 
@@ -107,11 +112,11 @@ namespace dd::libcanshark::threads {
             m_serial->setRequestToSend(m_serial->isRequestToSend());
             QThread::msleep(20);
             m_serial->setRequestToSend(false);
-
+            mutex.unlock();
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 
     bool FirmwareUpdateThread::closeConnection() {

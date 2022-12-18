@@ -23,7 +23,7 @@ namespace dd::libcanshark::threads {
     DataParserThread::~DataParserThread()
     {
         mutex.lock();
-        running = true;
+        running = false;
         mutex.unlock();
         wait();
     }
@@ -115,6 +115,7 @@ namespace dd::libcanshark::threads {
     }
 
     void DataParserThread::serialDataReceived(const QString &data) {
+        mutex.lock();
         for (char c: data.toStdString()) {
             if (c == '<') {
                 bAppendToPacket = true;
@@ -131,5 +132,6 @@ namespace dd::libcanshark::threads {
                 packetHexString.append(c);
             }
         }
+        mutex.unlock();
     }
 } // threads

@@ -3,6 +3,7 @@
 
 #include <QThread>
 #include <QSerialPort>
+#include <QMutex>
 
 namespace dd::libcanshark::threads {
     enum class FirmwareUpdateThreadStatus {
@@ -16,6 +17,8 @@ namespace dd::libcanshark::threads {
         FirmwareUpdateThread(QString fileName, QString portName);
 
     private:
+        QMutex mutex;
+
         QString m_fileName;
         QString m_serialPortName;
         QSerialPort* m_serial;
