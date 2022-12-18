@@ -7,13 +7,25 @@
 #include <QFile>
 #include <utility>
 
+#ifdef _WIN32
+#include "winsock2.h"
+#else
+#include <arpa/inet.h>
+#endif
+
 namespace dd::libcanshark::threads {
-    FirmwareUpdateThread::FirmwareUpdateThread(QString fileName, QSerialPort *serialPort)
-        : m_fileName(std::move(fileName)), m_serial(serialPort)
+    FirmwareUpdateThread::FirmwareUpdateThread(QString fileName, QString portName)
+        : m_fileName(std::move(fileName)), m_serialPortName(std::move(portName))
     { }
 
+    /**
+     * The thread loop
+     */
     void FirmwareUpdateThread::run() {
-        assert(m_serial != nullptr);
+        if(m_serial == nullptr)
+            m_serial = new QSerialPort();
+
+        openConnection();
 
         //Check if the serial port is connected, if not open it, if it can't open, fail and bail
         if(!m_serial->isOpen())
@@ -70,6 +82,43 @@ namespace dd::libcanshark::threads {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
+        closeConnection();
         emit finished(FirmwareUpdateThreadStatus::Success, tr("Update complete!"));
+    }
+
+    bool FirmwareUpdateThread::openConnection() {
+        if (m_serialPortName.isEmpty()) {
+            return false;
+        }
+
+        if (m_serial->isOpen())
+            closeConnection();
+
+        m_serial->setPortName(m_serialPortName);
+        m_serial->setBaudRate(115200);
+        m_serial->setDataBits(QSerialPort::Data8);
+        m_serial->setParity(QSerialPort::NoParity);
+        m_serial->setStopBits(QSerialPort::OneStop);
+        m_serial->setFlowControl(QSerialPort::NoFlowControl);
+
+        if (m_serial->open(QIODevice::ReadWrite)) {
+            m_serial->setDataTerminalReady(false);
+            m_serial->setRequestToSend(true);
+            m_serial->setRequestToSend(m_serial->isRequestToSend());
+            QThread::msleep(20);
+            m_serial->setRequestToSend(false);
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool FirmwareUpdateThread::closeConnection() {
+        m_serial->setDataTerminalReady(true);
+        m_serial->setRequestToSend(false);
+        m_serial->close();
+
+        return true;
     }
 } // threads

@@ -12,21 +12,23 @@ namespace dd::libcanshark::drivers {
     Q_OBJECT
 
     public:
-        explicit CanShark(libcanshark::threads::DataParserThread* dataThread, QObject *parent = nullptr);
+        explicit CanShark(QObject *parent = nullptr);
 
         ~CanShark() override;
 
-        virtual bool openConnection(QString const &portName) = 0;
+        bool openConnection(QString const &portName);
 
-        virtual bool closeConnection() = 0;
+        bool closeConnection();
 
         virtual bool startRecording(size_t max_messages) = 0;
 
         virtual bool stopRecording() = 0;
 
-        virtual bool updateFirmware(QString const &firmwareUpdateFileName) = 0;
+        virtual bool updateFirmware(QString const &firmwareUpdateFileName, const QString& selectedDevicePortName) = 0;
 
-        QList<std::tuple<QString, QString>>& getAvailablePorts();
+        QList<std::tuple<QString, QString>> getAvailablePorts();
+
+        threads::DataParserThread* getDataParserThread();
 
     protected:
         libcanshark::threads::DataParserThread *m_dataThread = nullptr;
@@ -36,7 +38,7 @@ namespace dd::libcanshark::drivers {
         size_t st_max_messages = 0;
         size_t st_recorded_message_count = 0;
 
-        bool m_updateMode = false;
+        QString m_serialPortName;
 
     protected slots:
         void readData();
