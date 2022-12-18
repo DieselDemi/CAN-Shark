@@ -91,6 +91,8 @@ namespace dd::libcanshark::drivers {
                    &CanSharkMini::updateThreadFinished);
         disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
                    &CanSharkMini::updateThreadProgress);
+
+        delete ptr_firmwareUpdateThread;
     }
 
     /**
