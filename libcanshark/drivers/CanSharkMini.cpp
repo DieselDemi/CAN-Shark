@@ -1,7 +1,6 @@
 #include "CanSharkMini.h"
 
 #include <QThread>
-#include <QFile>
 #include <Helpers.h>
 
 #include <iostream>

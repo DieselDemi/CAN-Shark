@@ -26,7 +26,7 @@ namespace dd::libcanshark::drivers {
 
         virtual bool updateFirmware(QString const &firmwareUpdateFileName) = 0;
 
-        QList<std::tuple<QString, QString>>& getAvailablePorts();
+        QList<std::tuple<QString, QString>> getAvailablePorts();
 
     protected:
         libcanshark::threads::DataParserThread *m_dataThread = nullptr;

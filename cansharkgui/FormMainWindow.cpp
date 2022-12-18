@@ -63,7 +63,7 @@ namespace dd::forms {
 
         // Create a CanShark object
         // TODO: Create the driver based on which device is connected
-        ptr_driverCanShark = new libcanshark::drivers::CanSharkMini(ptr_dataThread, this);
+        ptr_driverCanShark = new libcanshark::drivers::CanSharkMini(ptr_dataThread);
 
         assert(ptr_driverCanShark != nullptr);
 
@@ -186,6 +186,9 @@ namespace dd::forms {
      * @param data
      */
     void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem> &data) {
+        if(data.empty())
+            return;
+
         for (auto &row: data) {
             m_recordTableModelPtr->addRow(row);
         }

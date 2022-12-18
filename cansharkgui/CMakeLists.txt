@@ -41,9 +41,9 @@ endif ()
 
 target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 
-if(WIN32 AND CMAKE_BUILD_TYPE MATCHES "Release")
+if(WIN32 AND CMAKE_BUILD_TYPE MATCHES "Release" AND NOT MXE_BUILD)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${QT_INSTALL_PATH}/bin/windeployqt.exe --dir $<TARGET_FILE_DIR:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.exe)
-elseif (WIN32 AND CMAKE_BUILD_TYPE MATCHES "Debug")
+elseif (WIN32 AND CMAKE_BUILD_TYPE MATCHES "Debug" AND NOT MXE_BUILD)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${QT_INSTALL_PATH}/bin/windeployqt.exe --debug --dir $<TARGET_FILE_DIR:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.exe)
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)

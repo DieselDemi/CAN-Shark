@@ -1,6 +1,5 @@
 #include "CanShark.h"
 #include <QSerialPortInfo>
-#include <QMap>
 #include <iostream>
 #include <DataParserThread.h>
 
@@ -26,8 +25,8 @@ namespace dd::libcanshark::drivers {
 
     CanShark::~CanShark() {
         //TODO Fix this
-        if (m_serial->isOpen())
-            m_serial->close();
+//        if (m_serial->isOpen())
+//            m_serial->close();
     }
 
     /// Slots
@@ -67,7 +66,7 @@ namespace dd::libcanshark::drivers {
      * Get the available ports on the system
      * @return List of all the available ports
      */
-    QList<std::tuple<QString, QString>> &CanShark::getAvailablePorts() {
+    QList<std::tuple<QString, QString>> CanShark::getAvailablePorts() {
         auto *_ret = new QList<std::tuple<QString, QString>>();
 
         for (const auto &serial_port: QSerialPortInfo::availablePorts()) {
