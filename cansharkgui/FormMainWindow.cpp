@@ -58,7 +58,7 @@ namespace dd::forms {
         // TODO: Create the driver based on which device is connected
         m_driverCanShark = new libcanshark::drivers::CanSharkMini();
 
-        assert(ptr_driverCanShark != nullptr);
+        assert(m_driverCanShark != nullptr);
 
         connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::statusMessage,
                 this, &FormMainWindow::canSharkMessage);
