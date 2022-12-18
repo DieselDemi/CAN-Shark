@@ -20,6 +20,9 @@ namespace dd::forms {
         ui->setupUi(this);
 
         //Connect UI events
+        connect(ui->deviceSelectionComboBox, &QComboBox::currentIndexChanged,
+                this, &FormMainWindow::deviceSelectionChanged);
+
         connect(ui->connectButton, &QPushButton::released,
                 this, &FormMainWindow::connectClicked);
 
@@ -99,16 +102,9 @@ namespace dd::forms {
     void FormMainWindow::connectClicked() {
         assert(m_driverCanShark != nullptr);
 
-#ifdef WIN32
-        if(!m_driverCanShark->openConnection(tr("%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
-            QMessageBox::critical(this, tr("Could not connect!"), tr("Could not connect to canshark mini on %1").arg(this->ui->deviceSelectionComboBox->currentData().toString()));
-#else
-        if (!m_driverCanShark->openConnection(
-                tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString())))
+        if (!m_driverCanShark->openConnection(m_selectedDevicePortName))
             QMessageBox::critical(this, tr("Could not connect!"),
-                                  tr("Could not connect to canshark mini on /dev/%1").arg(
-                                          this->ui->deviceSelectionComboBox->currentData().toString()));
-#endif
+                                  tr("Could not connect to canshark mini on %1").arg(m_selectedDevicePortName));
 
         this->ui->connectButton->setEnabled(false);
         this->ui->disconnectButton->setEnabled(true);
@@ -164,7 +160,7 @@ namespace dd::forms {
         if(fileName.isEmpty())
             return;
 
-        if(m_driverCanShark->updateFirmware(fileName))
+        if(m_driverCanShark->updateFirmware(fileName, m_selectedDevicePortName))
             this->setEnabled(false);
     }
 
@@ -225,6 +221,14 @@ namespace dd::forms {
                 break;
         }
         this->setEnabled(true);
+    }
+
+    void FormMainWindow::deviceSelectionChanged(int index) {
+#ifdef WIN32
+        this->m_selectedDevicePortName = this->ui->deviceSelectionComboBox->currentData().toString();
+#else
+        this->m_selectedDevicePortName = tr("/dev/%1").arg(this->ui->deviceSelectionComboBox->currentData().toString());
+#endif
     }
 
 } // dd::forms
