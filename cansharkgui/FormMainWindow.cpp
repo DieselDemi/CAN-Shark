@@ -170,8 +170,8 @@ namespace dd::forms {
         if(fileName.isEmpty())
             return;
 
-        ptr_driverCanShark->updateFirmware(fileName);
-        this->setEnabled(false);
+        if(ptr_driverCanShark->updateFirmware(fileName))
+            this->setEnabled(false);
     }
 
     /**
