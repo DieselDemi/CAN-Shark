@@ -18,6 +18,9 @@ namespace dd::libcanshark::threads {
         : m_fileName(std::move(fileName)), m_serial(serialPort)
     { }
 
+    /**
+     * The thread loop
+     */
     void FirmwareUpdateThread::run() {
         assert(m_serial != nullptr);
 

@@ -23,16 +23,11 @@ namespace dd::forms {
 
     private:
         QApplication* ptr_mainApplication = nullptr;
-
         Ui::FormMainWindow *ui;
 
-        dd::libcanshark::threads::DataParserThread* ptr_dataThread = nullptr;
-
-        dd::libcanshark::drivers::CanShark* ptr_driverCanShark = nullptr;
-
-        std::unique_ptr<models::RecordTableModel> m_recordTableModelPtr;
-
-        FormSettings* ptr_formSettings = nullptr;
+        dd::libcanshark::drivers::CanShark* m_driverCanShark = nullptr;
+        models::RecordTableModel* m_recordTableModelPtr = nullptr;
+        FormSettings* m_formSettings = nullptr;
 
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 

@@ -1,7 +1,6 @@
 #include "CanSharkMini.h"
 
 #include <QThread>
-#include <QFile>
 #include <Helpers.h>
 
 #include <iostream>
@@ -9,71 +8,7 @@
 
 namespace dd::libcanshark::drivers {
 
-    CanSharkMini::CanSharkMini(
-            libcanshark::threads::DataParserThread *dataThread,
-            QObject *parent) : CanShark(dataThread, parent) {}
-
-    /**
-     * Open the serial port, closes the port if its currently open
-     * @return success
-     */
-    bool CanSharkMini::openConnection(QString const &portName) {
-        if (portName.isEmpty()) {
-            emit statusMessage(tr("Select a device to connect to first"));
-            return false;
-        }
-
-        if (m_serial->isOpen())
-            closeConnection();
-
-        m_serial->setPortName(portName);
-        m_serial->setBaudRate(115200);
-        m_serial->setDataBits(QSerialPort::Data8);
-        m_serial->setParity(QSerialPort::NoParity);
-        m_serial->setStopBits(QSerialPort::OneStop);
-        m_serial->setFlowControl(QSerialPort::NoFlowControl);
-
-        if (m_serial->open(QIODevice::ReadWrite)) {
-            emit statusMessage(tr("Connected to CanShark Mini on %1").arg(portName));
-
-            m_serial->setDataTerminalReady(false);
-            m_serial->setRequestToSend(true);
-            m_serial->setRequestToSend(m_serial->isRequestToSend());
-            QThread::msleep(20);
-            m_serial->setRequestToSend(false);
-
-            return true;
-        } else {
-            emit errorMessage(tr("Open error %1").arg(m_serial->errorString()));
-            return false;
-        }
-
-    }
-
-    /**
-     * Closes the serial port if the port is open
-     * @return success
-     */
-    bool CanSharkMini::closeConnection() {
-        if (m_serial->isOpen()) {
-            if (b_recording) {
-                if (!stopRecording()) {
-                    return false;
-                }
-            }
-
-            m_serial->setDataTerminalReady(true);
-            m_serial->setRequestToSend(false);
-            m_serial->close();
-        }
-
-        if (m_serial->isOpen())
-            return false;
-
-        emit statusMessage(tr("Disconnected"));
-
-        return true;
-    }
+    CanSharkMini::CanSharkMini(QObject *parent) : CanShark(parent) { }
 
     /**
      * Sends the start recording command to the CANShark Mini
@@ -150,6 +85,11 @@ namespace dd::libcanshark::drivers {
         return false;
     }
 
+    /**
+     *
+     * @param status
+     * @param message
+     */
     void CanSharkMini::updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString &message) {
         switch (status) {
             case threads::FirmwareUpdateThreadStatus::Success: {
@@ -170,6 +110,10 @@ namespace dd::libcanshark::drivers {
                 &CanSharkMini::updateThreadProgress);
     }
 
+    /**
+     *
+     * @param message
+     */
     void CanSharkMini::updateThreadProgress(const QString &message) {
         emit statusMessage(message);
     }
