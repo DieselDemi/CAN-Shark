@@ -5,6 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
+
 
 find_package(Qt6 COMPONENTS Core Gui Widgets SerialPort REQUIRED)
 
@@ -17,7 +19,11 @@ set(SRCS BaseTheme.h main.cpp FormMainWindow.cpp FormMainWindow.h FormMainWindow
 if (WIN32)
     set(APP_ICON_RESOURCE_WINDOWS "resources/appicon.rc")
 
-    add_executable(CanShark WIN32 ${SRCS} ${APP_ICON_RESOURCE_WINDOWS})
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        add_executable(CanShark ${SRCS} ${APP_ICON_RESOURCE_WINDOWS})
+    else()
+        add_executable(CanShark WIN32 ${SRCS} ${APP_ICON_RESOURCE_WINDOWS})
+    endif()
 elseif (APPLE)
     # NOTE: Don't include the path in MACOSX_BUNDLE_ICON_FILE -- this is
     # the property added to Info.plist
@@ -35,33 +41,10 @@ endif ()
 
 target_link_libraries(CanShark Qt6::Core Qt6::Gui Qt6::Widgets Qt6::SerialPort libcanshark qhexview-lib)
 
-if (WIN32 AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
-    set(DEBUG_SUFFIX)
-    if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
-        set(DEBUG_SUFFIX "d")
-    endif ()
-    set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
-    if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-        set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        endif ()
-    endif ()
-    if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E make_directory
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/platforms/")
-    endif ()
-    foreach (QT_LIB Core Gui Widgets SerialPort)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
-                "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
-    endforeach (QT_LIB)
+if(WIN32 AND CMAKE_BUILD_TYPE MATCHES "Release")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${QT_INSTALL_PATH}/bin/windeployqt.exe --dir $<TARGET_FILE_DIR:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.exe)
+elseif (WIN32 AND CMAKE_BUILD_TYPE MATCHES "Debug")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD COMMAND ${QT_INSTALL_PATH}/bin/windeployqt.exe --debug --dir $<TARGET_FILE_DIR:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>/${PROJECT_NAME}.exe)
 elseif (APPLE)
     install(TARGETS CanShark RUNTIME DESTINATION bin BUNDLE DESTINATION bin)
 else ()
