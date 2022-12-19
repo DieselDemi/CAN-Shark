@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
 #include "RecordTableModel.h"
-#include "threads/DataParserThread.h"
+#include "threads/RecordingThread.h"
 #include "drivers/CanSharkDrivers.h"
 #include "FormSettings.h"
 
@@ -35,8 +35,6 @@ namespace dd::forms {
 
     private slots:
         void deviceSelectionChanged(int index);
-        void connectClicked();
-        void disconnectClicked();
         void startClicked();
         void stopClicked();
         void updateClicked();
