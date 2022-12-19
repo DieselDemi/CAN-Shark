@@ -14,7 +14,9 @@ namespace dd::libcanshark::threads {
     public:
         explicit RecordingThread(QObject* parent = nullptr);
 
-        bool startRecording(const QString& serialPort, size_t st_maxMessages);
+        bool openConnection(const QString& serialPortName);
+        bool closeConnection();
+        bool startRecording(size_t st_maxMessages);
         bool stopRecording();
 
     protected:
