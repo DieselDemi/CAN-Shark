@@ -64,7 +64,7 @@ namespace dd::forms {
         connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::updateComplete,
                 this, &FormMainWindow::canSharkUpdateComplete);
 
-        for (const auto &port: m_driverCanShark->getAvailablePorts()) {
+        for (const auto &port: libcanshark::drivers::CanShark::getAvailablePorts()) {
             this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
     }
@@ -114,12 +114,13 @@ namespace dd::forms {
      */
     void FormMainWindow::updateClicked() {
         auto fileName = QFileDialog::getOpenFileName(this,
-                tr("Open Firmware Update"), "/home/", tr("Firmware Update Files (*.cfu)"));
+                                                     tr("Open Firmware Update"), "/home/",
+                                                     tr("Firmware Update Files (*.cfu)"));
 
-        if(fileName.isEmpty())
+        if (fileName.isEmpty())
             return;
 
-        if(m_driverCanShark->updateFirmware(fileName, m_selectedDevicePortName))
+        if (m_driverCanShark->updateFirmware(fileName, m_selectedDevicePortName))
             this->setEnabled(false);
     }
 
@@ -135,11 +136,18 @@ namespace dd::forms {
      * @param data
      */
     void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem> &data) {
-        if(data.empty())
+        if (data.empty())
             return;
 
         for (auto &row: data) {
-            m_recordTableModelPtr->addRow(row);
+            if (this->ui->onlyShowUniqueRadioButton->isChecked()) {
+                if(!m_recordTableModelPtr->hasRow(row))
+                    m_recordTableModelPtr->addRow(row);
+                else
+                    m_recordTableModelPtr->updateRow(row);
+            } else {
+                m_recordTableModelPtr->addRow(row);
+            }
         }
     }
 
@@ -153,10 +161,12 @@ namespace dd::forms {
 
     void FormMainWindow::defaultRadioButtonClicked(bool checked) {
         this->ui->onlyShowUniqueRadioButton->setChecked(!checked);
+        this->m_recordTableModelPtr->clearRows();
     }
 
     void FormMainWindow::onlyShowUniqueRadioButtonClicked(bool checked) {
         this->ui->defaultRadioButton->setChecked(!checked);
+        this->m_recordTableModelPtr->clearRows();
     }
 
     void FormMainWindow::settingsButtonClicked() {
@@ -171,12 +181,13 @@ namespace dd::forms {
     }
 
     void FormMainWindow::canSharkUpdateComplete(dd::libcanshark::threads::FirmwareUpdateThreadStatus status) {
-        switch(status) {
+        switch (status) {
             case libcanshark::threads::FirmwareUpdateThreadStatus::Success:
                 QMessageBox::information(this, tr("Update Complete"), tr("Firmware has been updated successfully"));
                 break;
             case libcanshark::threads::FirmwareUpdateThreadStatus::Fail:
-                QMessageBox::critical(this, tr("Firmware Update has Failed"), tr("Something went wrong with the firmware update!"));
+                QMessageBox::critical(this, tr("Firmware Update has Failed"),
+                                      tr("Something went wrong with the firmware update!"));
                 break;
         }
         this->setEnabled(true);

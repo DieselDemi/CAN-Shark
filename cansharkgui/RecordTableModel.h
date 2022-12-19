@@ -27,6 +27,9 @@ namespace dd::forms::models {
         [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
         void addRow(libcanshark::data::RecordItem& item);
+        bool updateRow(libcanshark::data::RecordItem& item);
+        bool hasRow(const libcanshark::data::RecordItem& item);
+        void clearRows();
 
         [[nodiscard]] libcanshark::data::RecordItem& getRecord(int row) const;
 
