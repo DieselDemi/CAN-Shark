@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QtSerialPort/QSerialPort>
 #include "RecordTableModel.h"
-#include "threads/DataParserThread.h"
+#include "threads/RecordingThread.h"
 #include "drivers/CanSharkDrivers.h"
 #include "FormSettings.h"
 
@@ -23,22 +23,18 @@ namespace dd::forms {
 
     private:
         QApplication* ptr_mainApplication = nullptr;
-
         Ui::FormMainWindow *ui;
 
-        dd::libcanshark::threads::DataParserThread* ptr_dataThread = nullptr;
+        dd::libcanshark::drivers::CanShark* m_driverCanShark = nullptr;
+        models::RecordTableModel* m_recordTableModelPtr = nullptr;
+        FormSettings* m_formSettings = nullptr;
 
-        dd::libcanshark::drivers::CanShark* ptr_driverCanShark = nullptr;
-
-        std::unique_ptr<models::RecordTableModel> m_recordTableModelPtr;
-
-        FormSettings* ptr_formSettings = nullptr;
+        QString m_selectedDevicePortName;
 
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 
     private slots:
-        void connectClicked();
-        void disconnectClicked();
+        void deviceSelectionChanged(int index);
         void startClicked();
         void stopClicked();
         void updateClicked();

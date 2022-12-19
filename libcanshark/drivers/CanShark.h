@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QSerialPort>
-#include "../threads/DataParserThread.h"
+#include "../threads/RecordingThread.h"
 #include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
@@ -12,36 +12,23 @@ namespace dd::libcanshark::drivers {
     Q_OBJECT
 
     public:
-        explicit CanShark(libcanshark::threads::DataParserThread* dataThread, QObject *parent = nullptr);
+        explicit CanShark(QObject *parent = nullptr);
 
         ~CanShark() override;
 
-        virtual bool openConnection(QString const &portName) = 0;
-
-        virtual bool closeConnection() = 0;
-
-        virtual bool startRecording(size_t max_messages) = 0;
+        virtual bool startRecording(const QString& serialPortName, size_t max_messages) = 0;
 
         virtual bool stopRecording() = 0;
 
-        virtual bool updateFirmware(QString const &firmwareUpdateFileName) = 0;
+        virtual bool updateFirmware(QString const &firmwareUpdateFileName, const QString& selectedDevicePortName) = 0;
 
-        QList<std::tuple<QString, QString>>& getAvailablePorts();
+        static QList<std::tuple<QString, QString>> getAvailablePorts();
 
     protected:
-        libcanshark::threads::DataParserThread *m_dataThread = nullptr;
+        libcanshark::threads::RecordingThread* ptr_recordingThread = nullptr;
+        threads::FirmwareUpdateThread* ptr_firmwareUpdateThread = nullptr;
 
-        QSerialPort *m_serial = nullptr;
-        bool b_recording = false;
-        size_t st_max_messages = 0;
-        size_t st_recorded_message_count = 0;
-
-        bool m_updateMode = false;
-
-    protected slots:
-        void readData();
-
-        void serialError(QSerialPort::SerialPortError error);
+        QString m_serialPortName;
 
     signals:
 
@@ -49,7 +36,7 @@ namespace dd::libcanshark::drivers {
 
         void errorMessage(QString const &message);
 
-        void serialDataReceived(const QString &data);
+        void dataReady(QList<data::RecordItem> &data);
 
         void updateComplete(threads::FirmwareUpdateThreadStatus status);
     };

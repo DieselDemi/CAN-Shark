@@ -1,104 +1,37 @@
 #include "CanSharkMini.h"
 
 #include <QThread>
-#include <QFile>
 #include <Helpers.h>
 
 #include <iostream>
 
-#ifdef _WIN32
-#include "winsock2.h"
-#else
-
-#include <arpa/inet.h>
-
-#endif
-
 
 namespace dd::libcanshark::drivers {
 
-    CanSharkMini::CanSharkMini(
-            libcanshark::threads::DataParserThread *dataThread,
-            QObject *parent) : CanShark(dataThread, parent) {}
+    CanSharkMini::CanSharkMini(QObject *parent) : CanShark(parent) {
+        ptr_recordingThread = new threads::RecordingThread();
 
-    /**
-     * Open the serial port, closes the port if its currently open
-     * @return success
-     */
-    bool CanSharkMini::openConnection(QString const &portName) {
-        if (portName.isEmpty()) {
-            emit statusMessage(tr("Select a device to connect to first"));
-            return false;
-        }
-
-        if (m_serial->isOpen())
-            closeConnection();
-
-        m_serial->setPortName(portName);
-        m_serial->setBaudRate(115200);
-        m_serial->setDataBits(QSerialPort::Data8);
-        m_serial->setParity(QSerialPort::NoParity);
-        m_serial->setStopBits(QSerialPort::OneStop);
-        m_serial->setFlowControl(QSerialPort::NoFlowControl);
-
-        if (m_serial->open(QIODevice::ReadWrite)) {
-            emit statusMessage(tr("Connected to CanShark Mini on %1").arg(portName));
-
-            m_serial->setDataTerminalReady(false);
-            m_serial->setRequestToSend(true);
-            m_serial->setRequestToSend(m_serial->isRequestToSend());
-            QThread::msleep(20);
-            m_serial->setRequestToSend(false);
-
-            return true;
-        } else {
-            emit errorMessage(tr("Open error %1").arg(m_serial->errorString()));
-            return false;
-        }
-
-    }
-
-    /**
-     * Closes the serial port if the port is open
-     * @return success
-     */
-    bool CanSharkMini::closeConnection() {
-        if (m_serial->isOpen()) {
-            if (b_recording) {
-                if (!stopRecording()) {
-                    return false;
-                }
-            }
-
-            m_serial->setDataTerminalReady(true);
-            m_serial->setRequestToSend(false);
-            m_serial->close();
-        }
-
-        if (m_serial->isOpen())
-            return false;
-
-        emit statusMessage(tr("Disconnected"));
-
-        return true;
+        connect(ptr_recordingThread, &threads::RecordingThread::dataReady,
+                this, &CanSharkMini::dataReady);
+        connect(ptr_recordingThread, &threads::RecordingThread::progressStatus,
+                this, &CanShark::statusMessage);
+        connect(ptr_recordingThread, &threads::RecordingThread::finished,
+                this, &CanSharkMini::recordingThreadFinished);
     }
 
     /**
      * Sends the start recording command to the CANShark Mini
      * @return success
      */
-    bool CanSharkMini::startRecording(size_t max_messages) {
-        this->st_max_messages = max_messages;
+    bool CanSharkMini::startRecording(const QString &serialPortName, size_t max_messages) {
+        this->m_serialPortName = serialPortName;
 
-        if (this->m_serial->isOpen()) {
-            m_serial->write("m");
-            if (m_serial->waitForBytesWritten()) {
-                emit statusMessage(tr("Started recording"));
-                return true;
-            }
+        if (this->ptr_recordingThread->openConnection(this->m_serialPortName)) {
+            QThread::msleep(300); //Sleep to allow the device to reboot and get into the proper mode
+            return this->ptr_recordingThread->startRecording(max_messages);
+        } else {
+            return false;
         }
-        emit errorMessage(tr("Could not start recording!"));
-        return false;
     }
 
     /**
@@ -106,15 +39,14 @@ namespace dd::libcanshark::drivers {
      * @return success
      */
     bool CanSharkMini::stopRecording() {
-        if (this->m_serial->isOpen()) {
-            m_serial->write("n");
-            if (m_serial->waitForBytesWritten()) {
-                emit statusMessage(tr("Stopped recording"));
-                return true;
-            }
+        bool stopped = this->ptr_recordingThread->stopRecording();
+
+        if (stopped) {
+            this->ptr_recordingThread->closeConnection();
+            this->ptr_recordingThread->quit();
         }
-        emit errorMessage(tr("Could not stop recording!"));
-        return false;
+
+        return stopped;
     }
 
     /**
@@ -122,42 +54,50 @@ namespace dd::libcanshark::drivers {
      * @param firmwareUpdateFileName
      * @return
      */
-    bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName) {
-        if (!this->m_serial->isOpen()) {
-            emit errorMessage(tr("Connect to the CAN Shark Mini first!"));
-            return false;
-        }
+    bool CanSharkMini::updateFirmware(const QString &firmwareUpdateFileName, const QString &selectedDevicePortName) {
+        this->m_serialPortName = selectedDevicePortName;
 
-        if (ptr_firmwareUpdateThread == nullptr)
-        {
-            ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName, this->m_serial);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
-                    &CanSharkMini::updateThreadFinished);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                    &CanSharkMini::updateThreadProgress);
-
-            ptr_firmwareUpdateThread->start();
-            emit statusMessage("Firmware update started");
+        if (ptr_firmwareUpdateThread == nullptr) {
+            ptr_firmwareUpdateThread = new threads::FirmwareUpdateThread(firmwareUpdateFileName,
+                                                                         selectedDevicePortName);
+            startFirmwareUpdate();
             return true;
-        }
-
-        if (ptr_firmwareUpdateThread->isFinished()) {
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
-                    &CanSharkMini::updateThreadFinished);
-
-            connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                    &CanSharkMini::updateThreadProgress);
-
-            ptr_firmwareUpdateThread->start();
-            emit statusMessage("Firmware update started");
+        } else if (ptr_firmwareUpdateThread->isFinished()) {
+            startFirmwareUpdate();
             return true;
         }
 
         return false;
     }
 
+    /**
+     * Start the firmware update thread
+     */
+    void CanSharkMini::startFirmwareUpdate() {
+        connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
+                &CanSharkMini::updateThreadFinished);
+
+        connect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
+                &CanSharkMini::updateThreadProgress);
+
+        ptr_firmwareUpdateThread->start();
+
+        emit statusMessage("Firmware update started");
+    }
+
+    /**
+     * Fired when the update thread has a progress update
+     * @param message
+     */
+    void CanSharkMini::updateThreadProgress(const QString &message) {
+        emit statusMessage(message);
+    }
+
+    /**
+     * Fired when the update thread is finished!.
+     * @param status
+     * @param message
+     */
     void CanSharkMini::updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString &message) {
         switch (status) {
             case threads::FirmwareUpdateThreadStatus::Success: {
@@ -175,10 +115,18 @@ namespace dd::libcanshark::drivers {
         disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::finished, this,
                    &CanSharkMini::updateThreadFinished);
         disconnect(ptr_firmwareUpdateThread, &threads::FirmwareUpdateThread::progressMessage, this,
-                &CanSharkMini::updateThreadProgress);
+                   &CanSharkMini::updateThreadProgress);
+
+        ptr_firmwareUpdateThread->quit();
+
+        delete ptr_firmwareUpdateThread;
     }
 
-    void CanSharkMini::updateThreadProgress(const QString &message) {
+    void CanSharkMini::recordingThreadFinished(const QString &message) {
+        this->ptr_recordingThread->closeConnection();
+        this->ptr_recordingThread->quit();
         emit statusMessage(message);
+
+        delete ptr_recordingThread;
     }
 } // drivers

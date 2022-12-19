@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1221</width>
-    <height>824</height>
+    <width>786</width>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -29,20 +29,6 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="connectButton">
-          <property name="text">
-           <string>Connect</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="disconnectButton">
-          <property name="text">
-           <string>Disconnect</string>
           </property>
          </widget>
         </item>
@@ -79,8 +65,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>970</width>
-            <height>649</height>
+            <width>535</width>
+            <height>437</height>
            </rect>
           </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
