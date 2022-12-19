@@ -6,7 +6,7 @@
 #include <QObject>
 #include <QSerialPort>
 #include "CanShark.h"
-#include "../threads/DataParserThread.h"
+#include "../threads/RecordingThread.h"
 #include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
@@ -15,19 +15,17 @@ namespace dd::libcanshark::drivers {
     public:
         explicit CanSharkMini(QObject* parent = nullptr);
 
-        bool startRecording(size_t max_messages) override;
+        bool startRecording(const QString& serialPortName, size_t max_messages) override;
         bool stopRecording() override;
         bool updateFirmware(QString const& firmwareUpdateFileName, const QString& selectedDevicePortName) override;
 
     private:
-        threads::FirmwareUpdateThread* ptr_firmwareUpdateThread = nullptr;
-
         void startFirmwareUpdate();
 
     private slots:
-        void updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString& message);
         void updateThreadProgress(const QString& message);
-
+        void updateThreadFinished(threads::FirmwareUpdateThreadStatus status, const QString& message);
+        void recordingThreadFinished(const QString& message);
     };
 
 } // drivers

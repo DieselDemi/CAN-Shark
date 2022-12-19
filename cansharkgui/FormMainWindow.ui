@@ -32,20 +32,6 @@
           </property>
          </widget>
         </item>
-        <item>
-         <widget class="QPushButton" name="connectButton">
-          <property name="text">
-           <string>Connect</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="disconnectButton">
-          <property name="text">
-           <string>Disconnect</string>
-          </property>
-         </widget>
-        </item>
        </layout>
       </widget>
      </item>

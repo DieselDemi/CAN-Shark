@@ -18,8 +18,8 @@ include_directories(drivers)
 
 set(SRCS
         RecordItem.h
-        threads/DataParserThread.cpp
-        threads/DataParserThread.h
+        threads/RecordingThread.cpp
+        threads/RecordingThread.h
         threads/FirmwareUpdateThread.cpp
         threads/FirmwareUpdateThread.h
         drivers/CanSharkMini.cpp

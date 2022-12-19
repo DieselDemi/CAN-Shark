@@ -50,16 +50,16 @@ namespace dd::forms {
 
     void FormSettings::saveToDeviceButtonClicked() {
         //TODO: Connect to currently selected device, send settings, then close connection
-        this->ptr_driverCanShark->openConnection(this->selectedDevicePort);
-//        this->ptr_driverCanShark->sendSettings();
-        this->ptr_driverCanShark->closeConnection();
+//        this->ptr_driverCanShark->openConnection(this->selectedDevicePort);
+////        this->ptr_driverCanShark->sendSettings();
+//        this->ptr_driverCanShark->closeConnection();
     }
 
     void FormSettings::updateDeviceLabelText() {
         //TODO: Connect to currently selected device, get device info, close the connection
-        this->ptr_driverCanShark->openConnection(this->selectedDevicePort);
-//        this->ptr_driverCanShark->getDeviceInfo();
-        this->ptr_driverCanShark->closeConnection();
+//        this->ptr_driverCanShark->openConnection(this->selectedDevicePort);
+////        this->ptr_driverCanShark->getDeviceInfo();
+//        this->ptr_driverCanShark->closeConnection();
     }
 
 } // dd::forms

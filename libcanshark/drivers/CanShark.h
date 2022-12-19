@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include <QSerialPort>
-#include "../threads/DataParserThread.h"
+#include "../threads/RecordingThread.h"
 #include "../threads/FirmwareUpdateThread.h"
 
 namespace dd::libcanshark::drivers {
@@ -16,34 +16,19 @@ namespace dd::libcanshark::drivers {
 
         ~CanShark() override;
 
-        bool openConnection(QString const &portName);
-
-        bool closeConnection();
-
-        virtual bool startRecording(size_t max_messages) = 0;
+        virtual bool startRecording(const QString& serialPortName, size_t max_messages) = 0;
 
         virtual bool stopRecording() = 0;
 
         virtual bool updateFirmware(QString const &firmwareUpdateFileName, const QString& selectedDevicePortName) = 0;
 
-        QList<std::tuple<QString, QString>> getAvailablePorts();
-
-        threads::DataParserThread* getDataParserThread();
+        static QList<std::tuple<QString, QString>> getAvailablePorts();
 
     protected:
-        libcanshark::threads::DataParserThread *m_dataThread = nullptr;
-
-        QSerialPort *m_serial = nullptr;
-        bool b_recording = false;
-        size_t st_max_messages = 0;
-        size_t st_recorded_message_count = 0;
+        libcanshark::threads::RecordingThread* ptr_recordingThread = nullptr;
+        threads::FirmwareUpdateThread* ptr_firmwareUpdateThread = nullptr;
 
         QString m_serialPortName;
-
-    protected slots:
-        void readData();
-
-        void serialError(QSerialPort::SerialPortError error);
 
     signals:
 
@@ -51,7 +36,7 @@ namespace dd::libcanshark::drivers {
 
         void errorMessage(QString const &message);
 
-        void serialDataReceived(const QString &data);
+        void dataReady(QList<data::RecordItem> &data);
 
         void updateComplete(threads::FirmwareUpdateThreadStatus status);
     };

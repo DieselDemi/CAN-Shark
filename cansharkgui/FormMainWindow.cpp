@@ -23,12 +23,6 @@ namespace dd::forms {
         connect(ui->deviceSelectionComboBox, &QComboBox::currentIndexChanged,
                 this, &FormMainWindow::deviceSelectionChanged);
 
-        connect(ui->connectButton, &QPushButton::released,
-                this, &FormMainWindow::connectClicked);
-
-        connect(ui->disconnectButton, &QPushButton::released,
-                this, &FormMainWindow::disconnectClicked);
-
         connect(ui->startButton, &QPushButton::released,
                 this, &FormMainWindow::startClicked);
 
@@ -48,9 +42,7 @@ namespace dd::forms {
         connect(ui->onlyShowUniqueRadioButton, &QRadioButton::clicked, this,
                 &FormMainWindow::onlyShowUniqueRadioButtonClicked);
 
-        this->ui->disconnectButton->setEnabled(false);
         this->ui->stopButton->setEnabled(false);
-
         this->ui->defaultRadioButton->setChecked(true);
 
         m_recordTableModelPtr = new models::RecordTableModel(ui->recordTable);
@@ -67,7 +59,8 @@ namespace dd::forms {
                 this, &FormMainWindow::canSharkMessage);
         connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::errorMessage,
                 this, &FormMainWindow::canSharkError);
-
+        connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::dataReady,
+                this, &FormMainWindow::parsedDataReady);
         connect(m_driverCanShark, &dd::libcanshark::drivers::CanShark::updateComplete,
                 this, &FormMainWindow::canSharkUpdateComplete);
 
@@ -97,57 +90,23 @@ namespace dd::forms {
     //// PRIVATE SLOTS
 
     /**
-     * Called when the user clicks connect
-     */
-    void FormMainWindow::connectClicked() {
-        assert(m_driverCanShark != nullptr);
-
-        if (!m_driverCanShark->openConnection(m_selectedDevicePortName))
-            QMessageBox::critical(this, tr("Could not connect!"),
-                                  tr("Could not connect to canshark mini on %1").arg(m_selectedDevicePortName));
-
-        this->ui->connectButton->setEnabled(false);
-        this->ui->disconnectButton->setEnabled(true);
-
-        //Connect the data thread data ready signal
-        connect(this->m_driverCanShark->getDataParserThread(), &dd::libcanshark::threads::DataParserThread::dataReady,
-                this, &FormMainWindow::parsedDataReady);
-    }
-
-    /**
-     * Called when the user clicks disconnect
-     */
-    void FormMainWindow::disconnectClicked() {
-        if (!m_driverCanShark->closeConnection())
-            QMessageBox::critical(this, tr("Could not disconnect!"), tr("Could not disconnect from target!"));
-
-        this->ui->connectButton->setEnabled(true);
-        this->ui->disconnectButton->setEnabled(false);
-
-        disconnect(this->m_driverCanShark->getDataParserThread(), &dd::libcanshark::threads::DataParserThread::dataReady,
-                this, &FormMainWindow::parsedDataReady);
-    }
-
-    /**
      * Called when the users clicks start recording
      */
     void FormMainWindow::startClicked() {
-        if (!m_driverCanShark->startRecording(0))
-            return;
+        bool started = m_driverCanShark->startRecording(m_selectedDevicePortName, 0);
 
-        this->ui->startButton->setEnabled(false);
-        this->ui->stopButton->setEnabled(true);
+        this->ui->startButton->setEnabled(!started);
+        this->ui->stopButton->setEnabled(started);
     }
 
     /**
      * Called when the user clicks stop recording
      */
     void FormMainWindow::stopClicked() {
-        if (!m_driverCanShark->stopRecording())
-            return;
+        bool stopped = m_driverCanShark->stopRecording();
 
-        this->ui->startButton->setEnabled(true);
-        this->ui->stopButton->setEnabled(false);
+        this->ui->startButton->setEnabled(stopped);
+        this->ui->stopButton->setEnabled(!stopped);
     }
 
     /**
@@ -172,7 +131,7 @@ namespace dd::forms {
     }
 
     /**
-     * Called when the DataParserThread has data ready to be added
+     * Called when the RecordingThread has data ready to be added
      * @param data
      */
     void FormMainWindow::parsedDataReady(QList<dd::libcanshark::data::RecordItem> &data) {
