@@ -48,28 +48,19 @@ namespace dd::forms::models {
                     //Data
                 case 5: {
                     libcanshark::data::RecordItem item = rowsList.at(index.row());
-                    std::stringstream output;
-
-//                    for (size_t i = 0; i < item.total_size; i++) {
-//                        output << std::hex << item.data[i] << " ";
-//                    }
-
-                    return QString::fromStdString(output.str());
+                    auto byteArray = QByteArray::fromRawData(reinterpret_cast<const char *>(item.data), item.canDataLength);
+                    return byteArray.toHex();
                 }
-                    //CRC
+                //CRC
                 case 6:
                     return QString::number(rowsList.at(index.row()).crc16);
 
-                    //Default do nothing
                 default:
                 {
                     return "";
                 }
             }
         }
-//            return QString("Row%1, Column%2")
-//                    .arg(index.row() + 1)
-//                    .arg(index.column() +1);
 
         return {};
     }
@@ -133,8 +124,6 @@ namespace dd::forms::models {
     }
 
     void RecordTableModel::inspectButtonClicked(int row) {
-//        std::cout << rowsList.at(row).id << std::endl;
-
         delete m_inspectForm;
 
         libcanshark::data::RecordItem rowItem = getRecord(row);
@@ -152,7 +141,11 @@ namespace dd::forms::models {
         if(!rowsList.contains(item))
             return false;
 
-        rowsList[rowsList.indexOf(item)] = item;
+        int itemRow = (int)rowsList.indexOf(item);
+
+        rowsList[itemRow] = item;
+
+        emit dataChanged(index(itemRow, 0), index(itemRow, 7));
 
         return true;
     }
@@ -162,7 +155,12 @@ namespace dd::forms::models {
     }
 
     void RecordTableModel::clearRows() {
+        int oldCount = (int)rowsList.count();
+
         rowsList.clear();
+        rowsList.resize(0);
+
+        emit dataChanged(index(0, 0), index(oldCount, 7));
     }
 
 
