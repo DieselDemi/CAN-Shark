@@ -31,9 +31,9 @@ namespace dd::forms::models {
                     //Frame Type
                 case 2: {
                     switch (rowsList.at(index.row()).type) {
-                        case libcanshark::data::STANDARD:
+                        case libcanshark::data::CanFrameType::STANDARD:
                             return QString("STANDARD");
-                        case libcanshark::data::RTR:
+                        case libcanshark::data::CanFrameType::RTR:
                             return QString("REMOTE");
                         default:
                             return QString("Unknown");
@@ -147,5 +147,23 @@ namespace dd::forms::models {
         inspectForm->show();
 
     }
+
+    bool RecordTableModel::updateRow(libcanshark::data::RecordItem &item) {
+        if(!rowsList.contains(item))
+            return false;
+
+        rowsList[rowsList.indexOf(item)] = item;
+
+        return true;
+    }
+
+    bool RecordTableModel::hasRow(const libcanshark::data::RecordItem &item) {
+        return rowsList.contains(item);
+    }
+
+    void RecordTableModel::clearRows() {
+        rowsList.clear();
+    }
+
 
 } // models
