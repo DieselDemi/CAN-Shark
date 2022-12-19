@@ -93,6 +93,9 @@ namespace dd::forms {
      * Called when the users clicks start recording
      */
     void FormMainWindow::startClicked() {
+        if(m_selectedDevicePortName.isEmpty())
+            return;
+
         bool started = m_driverCanShark->startRecording(m_selectedDevicePortName, 0);
 
         this->ui->startButton->setEnabled(!started);
