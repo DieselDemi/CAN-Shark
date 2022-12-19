@@ -23,7 +23,7 @@
       <enum>QTabWidget::Rounded</enum>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>1</number>
      </property>
      <property name="usesScrollButtons">
       <bool>false</bool>
@@ -179,6 +179,13 @@
               </widget>
              </item>
             </layout>
+           </item>
+           <item>
+            <widget class="QPushButton" name="recoveryButton">
+             <property name="text">
+              <string>Recover Device</string>
+             </property>
+            </widget>
            </item>
            <item>
             <spacer name="verticalSpacer_3">
