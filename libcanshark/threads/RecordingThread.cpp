@@ -22,12 +22,12 @@ namespace dd::libcanshark::threads {
 
         connect(&m_serialPort, &QSerialPort::readyRead,
                 this, &RecordingThread::serialDataReady);
+
+
     }
 
-    bool RecordingThread::startRecording(const QString &serialPortName, size_t st_maxMessages) {
-        //TODO This needs to be cleaned up
+    bool RecordingThread::openConnection(const QString &serialPortName) {
         m_serialPortName = serialPortName;
-        st_max_messages = st_maxMessages;
 
         m_mutex.lock();
         m_serialPort.setPortName(m_serialPortName);
@@ -43,25 +43,65 @@ namespace dd::libcanshark::threads {
             m_serialPort.setRequestToSend(m_serialPort.isRequestToSend());
             QThread::msleep(20);
             m_serialPort.setRequestToSend(false);
-            QThread::msleep(500);
+            m_mutex.unlock();
+            emit progressStatus(tr("Connected on %1").arg(serialPortName));
+            return true;
+        }
+
+        emit finished(tr("Could not connect to serial port %1: %2")
+                              .arg(serialPortName, m_serialPort.errorString()));
+
+        m_mutex.unlock();
+        return false;
+    }
+
+    bool RecordingThread::closeConnection() {
+        m_mutex.lock();
+        if(!m_serialPort.isOpen())
+            return true;
+
+        m_serialPort.close();
+
+        if(m_serialPort.isOpen())
+            return false;
+
+        emit progressStatus(tr("Disconnected!"));
+        m_mutex.unlock();
+
+        return true;
+    }
+
+    bool RecordingThread::startRecording(size_t st_maxMessages) {
+        m_mutex.lock();
+
+        st_max_messages = st_maxMessages;
+
+        if (m_serialPort.isOpen()) {
+            QThread::msleep(100);
             m_serialPort.write("m");
             m_serialPort.flush();
             b_recording = true;
+
+            emit progressStatus(tr("Started Recording"));
+
             m_mutex.unlock();
-            if(!this->isRunning())
+
+            if (!this->isRunning())
                 this->start();
+
             return true;
         }
 
         b_recording = false;
         m_mutex.unlock();
-        emit finished(tr("Could not open serial port! %1").arg(m_serialPort.errorString()));
+        emit finished(tr("Could not start recording! %1").arg(m_serialPort.errorString()));
         return false;
     }
 
     bool RecordingThread::stopRecording() {
         m_mutex.lock();
         b_recording = false;
+        emit progressStatus(tr("Stopped Recording."));
         m_mutex.unlock();
         return true;
     }
@@ -83,6 +123,9 @@ namespace dd::libcanshark::threads {
                 memcpy(&messageLength, packetHexData.data(), sizeof(uint32_t));
                 messageLength = ntohl(messageLength);
 
+                if (messageLength > 32 || messageLength <= 0)
+                    continue; //Bad message size;
+
                 // Get the us delta time
                 uint32_t usDeltaTime = 0;
                 memcpy(&usDeltaTime, packetHexData.data() + sizeof(uint32_t), sizeof(uint32_t));
@@ -100,6 +143,10 @@ namespace dd::libcanshark::threads {
                 id = ntohl(id);
 
                 size_t canDataLength = messageLength - (sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t));
+
+                if (canDataLength > 8)
+                    continue; //Bad can data length
+
                 auto *canData = (uint8_t *) malloc(sizeof(uint8_t) * canDataLength);
                 memcpy(canData, packetHexData.data() + sizeof(uint32_t) + sizeof(uint16_t) + sizeof(uint32_t),
                        canDataLength);
@@ -139,18 +186,20 @@ namespace dd::libcanshark::threads {
             m_mutex.unlock();
         }
 
-        if (this->m_serialPort.isOpen()) {
-            m_serialPort.write("n");
-            m_serialPort.flush();
-            m_serialPort.close();
-        }
+        m_mutex.lock();
+        m_serialPort.write("n");
+        m_serialPort.flush();
+        m_mutex.unlock();
     }
 
     void RecordingThread::serialDataReady() {
         QByteArray response = m_serialPort.readAll();
+
         if (response.size() <= 0) {
             return;
         }
+
+        emit progressStatus(tr("Received %1bytes").arg(response.size()));
 
         if (st_max_messages > 0 && st_recorded_message_count == st_max_messages)
             return;
