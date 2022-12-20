@@ -30,7 +30,7 @@ set(SRCS
         drivers/CanSharkPro.h
         drivers/CanShark.cpp
         drivers/CanShark.h
-        drivers/CanSharkDrivers.h)
+        drivers/CanSharkDrivers.h threads/HardwarePollingThread.cpp threads/HardwarePollingThread.h)
 
 add_library(libcanshark STATIC ${SRCS})
 

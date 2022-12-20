@@ -5,6 +5,7 @@
 #include <QtSerialPort/QSerialPort>
 #include "RecordTableModel.h"
 #include "threads/RecordingThread.h"
+#include "threads/HardwarePollingThread.h"
 #include "drivers/CanSharkDrivers.h"
 #include "FormSettings.h"
 
@@ -28,12 +29,14 @@ namespace dd::forms {
         dd::libcanshark::drivers::CanShark* m_driverCanShark = nullptr;
         models::RecordTableModel* m_recordTableModelPtr = nullptr;
         FormSettings* m_formSettings = nullptr;
+        libcanshark::threads::HardwarePollingThread* m_hardwarePollingThread = nullptr;
 
         QString m_selectedDevicePortName;
 
         void setStatusMessage(const QString &message, QColor color = Qt::white);
 
     private slots:
+        void hardwareChanged();
         void deviceSelectionChanged(int index);
         void startClicked();
         void stopClicked();

@@ -67,12 +67,23 @@ namespace dd::forms {
         for (const auto &port: libcanshark::drivers::CanShark::getAvailablePorts()) {
             this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
         }
+
+        m_hardwarePollingThread = new libcanshark::threads::HardwarePollingThread;
+
+        connect(m_hardwarePollingThread, &dd::libcanshark::threads::HardwarePollingThread::hardwareChanged,
+                this, &FormMainWindow::hardwareChanged);
+
+        m_hardwarePollingThread->start();
     }
 
     /**
      * Basic destructor
      */
     FormMainWindow::~FormMainWindow() {
+        m_hardwarePollingThread->quit();
+//        while(!m_hardwarePollingThread->isRunning())
+//            ;
+//        delete m_hardwarePollingThread;
         delete ui;
     }
 
@@ -117,8 +128,8 @@ namespace dd::forms {
      */
     void FormMainWindow::updateClicked() {
         auto fileName = QFileDialog::getOpenFileName(this,
-                                                     tr("Open Firmware Update"), "/home/",
-                                                     tr("Firmware Update Files (*.cfu)"));
+                                 tr("Open Firmware Update"), "/home/",
+                                 tr("Firmware Update Files (*.cfu)"));
 
         if (fileName.isEmpty())
             return;
@@ -194,6 +205,13 @@ namespace dd::forms {
                 break;
         }
         this->setEnabled(true);
+    }
+
+    void FormMainWindow::hardwareChanged() {
+        this->ui->deviceSelectionComboBox->clear();
+        for (const auto &port: libcanshark::drivers::CanShark::getAvailablePorts()) {
+            this->ui->deviceSelectionComboBox->addItem(std::get<0>(port), {std::get<1>(port)});
+        }
     }
 
     void FormMainWindow::deviceSelectionChanged(int index) {
